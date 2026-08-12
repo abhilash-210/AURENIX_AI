@@ -1,0 +1,3 @@
+"""
+Aurenix AI backend package.
+"""
