@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  # ──────────────────────────────────────────────────────────────────────
+  # Lint & type-check (runs on every PR; no services needed)
+  # ──────────────────────────────────────────────────────────────────────
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        run: pip install uv
+
+      # Backend lint — will activate once backend/ has pyproject.toml
+      # - name: Install backend dependencies
+      #   run: uv sync --dev
+      #   working-directory: backend
+
+      # - name: Ruff lint
+      #   run: uv run ruff check .
+      #   working-directory: backend
+
+      # - name: Mypy type check
+      #   run: uv run mypy .
+      #   working-directory: backend
+
+      - name: Confirm lint step placeholder
+        run: echo "Lint step will activate in Sprint 1 when backend/ is scaffolded."
+
+  # ──────────────────────────────────────────────────────────────────────
+  # Tests (will activate in Sprint 1)
+  # ──────────────────────────────────────────────────────────────────────
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # - name: Install backend dependencies
+      #   run: uv sync --dev
+      #   working-directory: backend
+
+      # - name: Run tests
+      #   run: uv run pytest tests/ --cov --cov-report=xml
+      #   working-directory: backend
+
+      - name: Confirm test step placeholder
+        run: echo "Test step will activate in Sprint 1 when tests/ is scaffolded."
