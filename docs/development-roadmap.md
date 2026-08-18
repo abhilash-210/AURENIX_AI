@@ -116,26 +116,28 @@ Each sprint delivers a **working, testable increment** of the system. No sprint 
 
 ---
 
-## Sprint 4 — Memory System
+## Sprint 4 — Document Ingestion Pipeline
 
-**Goal:** Context persists across conversation turns and sessions.
+**Goal:** Documents can be securely uploaded, validated, parsed, and chunked with metadata.
 
 **Deliverables:**
 
-| Item | Description |
-|---|---|
-| Short-term memory | Redis-backed sliding window of last N turns |
-| Long-term memory | PostgreSQL facts extracted from conversations |
-| Episodic memory | Timestamped interaction log with relevance scoring |
-| Memory injection | Supervisor automatically loads relevant memory before LLM call |
-| Memory API | `GET /api/v1/memory/{session_id}`, `DELETE /api/v1/memory/{session_id}` |
-| Unit tests | Memory read/write/expire/retrieve |
+| Item | Description | Status |
+|---|---|---|
+| File validation | Secure validation, max size, sanitization | ✅ |
+| Format Parsers | PDF, DOCX, TXT, CSV parsers | ✅ |
+| Text Extraction & Cleaning | Extracts text, cleans control chars and whitespace | ✅ |
+| Recursive Chunker | Chunks text preserving page/row/source metadata | ✅ |
+| Storage Layer | Workspace association and file persistence | ✅ |
+| Clean Interfaces | Defines ParsedDocument/ParsedPage for future vector layer | ✅ |
+| Unit tests | Validation, parsing, and chunking tested with invalid files | ✅ |
 
 **Acceptance Criteria:**
-- [ ] Agent recalls information from prior turns in same session
-- [ ] Agent recalls user-stated preferences from prior sessions
-- [ ] Memory TTL is respected; expired entries not returned
-- [ ] All tests pass: `pytest memory/tests/`
+- [x] Secure file validation and configurable max size
+- [x] Safe filenames and document ownership tracking
+- [x] Parsers correctly handle PDF, DOCX, TXT, CSV formats
+- [x] Chunker accurately splits text and adds page number / chunk metadata
+- [x] All tests pass: `pytest backend/tests/test_document_*.py`
 
 ---
 
