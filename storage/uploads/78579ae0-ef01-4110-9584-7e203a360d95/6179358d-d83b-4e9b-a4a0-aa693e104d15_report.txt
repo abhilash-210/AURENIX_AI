@@ -1,0 +1,4 @@
+Heading
+
+This is paragraph one of the ingested text document.
+Paragraph two here.

@@ -30,10 +30,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import get_settings
-from app.exceptions import AurenixError
+from app.database import create_db_tables, engine
+from app.exceptions import AurenixError, AuthenticationError, ForbiddenError
 from app.logging_config import configure_logging
 from app.middleware.logging import RequestLoggingMiddleware
-from app.routes import health
+from app.routes import auth, chat, documents, health
 from app.schemas.common import ErrorResponse
 
 logger = logging.getLogger(__name__)
@@ -72,8 +73,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:  # noqa: ARG001
         },
     )
 
+    # Create DB tables on startup (dev/test convenience).
+    # Production deployments should use ``alembic upgrade head`` instead.
+    await create_db_tables()
+
     yield  # application is running
 
+    # Gracefully close the async connection pool on shutdown
+    await engine.dispose()
     logger.info("Aurenix AI shutting down")
 
 
@@ -142,9 +149,15 @@ def create_app() -> FastAPI:
             message=exc.message,
             request_id=request_id,
         )
+
+        headers: dict[str, str] = {}
+        if isinstance(exc, AuthenticationError):
+            headers["WWW-Authenticate"] = "Bearer"
+
         return JSONResponse(
             status_code=exc.status_code,
             content=body.model_dump(mode="json"),
+            headers=headers or None,
         )
 
     @app.exception_handler(RequestValidationError)
@@ -206,6 +219,9 @@ def create_app() -> FastAPI:
     API_PREFIX = "/api/v1"
 
     app.include_router(health.router, prefix=API_PREFIX)
+    app.include_router(auth.router, prefix=API_PREFIX)
+    app.include_router(chat.router, prefix=API_PREFIX)
+    app.include_router(documents.router, prefix=API_PREFIX)
 
     return app
 

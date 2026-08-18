@@ -78,6 +78,31 @@ class RateLimitError(AurenixError):
     error_code = "RATE_LIMITED"
 
 
+class AuthenticationError(AurenixError):
+    """
+    Request is missing valid credentials or the credentials are wrong.
+
+    Maps to HTTP 401.  The global exception handler adds the
+    ``WWW-Authenticate: Bearer`` header so OAuth2 clients can discover the
+    correct authentication scheme.
+    """
+
+    status_code = HTTPStatus.UNAUTHORIZED
+    error_code = "AUTHENTICATION_ERROR"
+
+
+class ForbiddenError(AurenixError):
+    """
+    The authenticated user lacks the required role or permission.
+
+    Maps to HTTP 403.  Unlike 401, this means the server understood *who*
+    the caller is but refuses to authorise the action.
+    """
+
+    status_code = HTTPStatus.FORBIDDEN
+    error_code = "FORBIDDEN"
+
+
 # ──────────────────────────────────────────────────────────────────────────────
 # 5xx — Server errors
 # ──────────────────────────────────────────────────────────────────────────────
@@ -88,3 +113,77 @@ class ServiceUnavailableError(AurenixError):
 
     status_code = HTTPStatus.SERVICE_UNAVAILABLE
     error_code = "SERVICE_UNAVAILABLE"
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# LLM Gateway errors
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+class LLMError(AurenixError):
+    """Base exception for all LLM gateway failures."""
+
+    status_code = HTTPStatus.INTERNAL_SERVER_ERROR
+    error_code = "LLM_ERROR"
+
+
+class LLMProviderError(LLMError):
+    """Upstream LLM provider returned an error response or failed to respond."""
+
+    status_code = HTTPStatus.BAD_GATEWAY
+    error_code = "LLM_PROVIDER_ERROR"
+
+
+class LLMTimeoutError(LLMError):
+    """LLM provider request timed out."""
+
+    status_code = HTTPStatus.GATEWAY_TIMEOUT
+    error_code = "LLM_TIMEOUT"
+
+
+class LLMRateLimitError(LLMError):
+    """LLM provider rate limit exceeded."""
+
+    status_code = HTTPStatus.TOO_MANY_REQUESTS
+    error_code = "LLM_RATE_LIMITED"
+
+
+class LLMStructuredOutputError(LLMError):
+    """Failed to parse or validate LLM response into requested structured schema."""
+
+    status_code = HTTPStatus.UNPROCESSABLE_ENTITY
+    error_code = "LLM_STRUCTURED_OUTPUT_ERROR"
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Document Ingestion errors
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+class DocumentError(AurenixError):
+    """Base exception for document ingestion failures."""
+
+    status_code = HTTPStatus.BAD_REQUEST
+    error_code = "DOCUMENT_ERROR"
+
+
+class UnsupportedFileTypeError(DocumentError):
+    """Uploaded file extension or MIME type is not supported."""
+
+    status_code = HTTPStatus.UNSUPPORTED_MEDIA_TYPE
+    error_code = "UNSUPPORTED_FILE_TYPE"
+
+
+class FileTooLargeError(DocumentError):
+    """Uploaded file size exceeds configured maximum limit."""
+
+    status_code = HTTPStatus.REQUEST_ENTITY_TOO_LARGE
+    error_code = "FILE_TOO_LARGE"
+
+
+class DocumentParsingError(DocumentError):
+    """Failed to parse or extract text from document."""
+
+    status_code = HTTPStatus.UNPROCESSABLE_ENTITY
+    error_code = "DOCUMENT_PARSING_ERROR"
+
