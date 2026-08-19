@@ -175,6 +175,46 @@ class Settings(BaseSettings):
     )
 
     # ──────────────────────────────────────────────────────────────────────────
+    # Embeddings
+    # ──────────────────────────────────────────────────────────────────────────
+    embedding_provider: str = Field(
+        default="openai",
+        description="Default embedding provider (openai | mock)",
+    )
+    embedding_model: str = Field(
+        default="text-embedding-3-small",
+        description="Default embedding model",
+    )
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # Vector Database (Qdrant)
+    # ──────────────────────────────────────────────────────────────────────────
+    qdrant_url: str = Field(
+        default="http://localhost:6333",
+        description="Qdrant server URL",
+    )
+    qdrant_api_key: SecretStr | None = Field(
+        default=None,
+        description="Optional Qdrant API key",
+    )
+    qdrant_collection_name: str = Field(
+        default="aurenix_documents",
+        description="Name of the main Qdrant collection",
+    )
+    qdrant_memory_collection_name: str = Field(
+        default="aurenix_memories",
+        description="Name of the Qdrant collection for semantic memories",
+    )
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # MCP (Model Context Protocol) Integration
+    # ──────────────────────────────────────────────────────────────────────────
+    mcp_servers_config: str = Field(
+        default="[]",
+        description="JSON string defining trusted MCP servers and their allowed tools.",
+    )
+
+    # ──────────────────────────────────────────────────────────────────────────
     # Document Ingestion
     # ──────────────────────────────────────────────────────────────────────────
     upload_dir: str = Field(
