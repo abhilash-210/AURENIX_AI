@@ -9,9 +9,11 @@ from fastapi import APIRouter, Depends, File, Form, Request, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.exceptions import NotFoundError
+from app.exceptions import NotFoundError, ForbiddenError, PaymentRequiredError
 from app.models.user import User
+from app.models.workspace import WorkspaceMember
 from app.routes.auth import get_current_user
+from app.dependencies import get_workspace_member, require_workspace_role
 from app.schemas.common import ResponseMeta
 from app.schemas.documents import (
     ChunkListResponse,
@@ -42,6 +44,18 @@ async def upload_document(
     db: AsyncSession = Depends(get_db),
 ) -> DocumentResponse:
     request_id: str = getattr(request.state, "request_id", "unknown")
+    
+    # 1. Enforce access
+    member = await get_workspace_member(workspace_id, current_user.id, db)
+    
+    # 2. Check limits
+    from sqlalchemy import select, func
+    from app.models.document import Document
+    doc_count = await db.scalar(select(func.count(Document.id)).where(Document.workspace_id == workspace_id))
+    max_docs = member.workspace.settings.get("max_documents", 100) # default limit 100
+    if doc_count and doc_count >= max_docs:
+        raise PaymentRequiredError(f"Workspace has reached its maximum document limit ({max_docs}).")
+
     content = await file.read()
     filename = file.filename or "unnamed_document"
 
@@ -198,3 +212,43 @@ async def get_document_chunks(
         data=items,
         meta=ResponseMeta(request_id=request_id),
     )
+
+
+@router.delete(
+    "/documents/{document_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a document",
+)
+async def delete_document(
+    document_id: uuid.UUID,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    service = DocumentIngestionService(db)
+    doc_record = await service.get_document(document_id)
+
+    if not doc_record:
+        raise NotFoundError("Document not found.")
+
+    member = await get_workspace_member(doc_record.workspace_id, current_user.id, db)
+
+    # Only owner or admin/owner can delete
+    if str(doc_record.owner_id) != str(current_user.id) and member.role not in ("admin", "owner"):
+        raise ForbiddenError("You do not have permission to delete this document.")
+
+    await db.delete(doc_record)
+    await db.commit()
+    
+    # Log the action
+    from app.services.audit.service import AuditService
+    audit_service = AuditService(db)
+    await audit_service.log_action(
+        workspace_id=doc_record.workspace_id,
+        user_id=current_user.id,
+        action="document.deleted",
+        resource_type="Document",
+        resource_id=str(doc_record.id),
+        details={"filename": doc_record.filename},
+    )
+

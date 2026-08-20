@@ -34,7 +34,7 @@ from app.database import create_db_tables, engine
 from app.exceptions import AurenixError, AuthenticationError, ForbiddenError
 from app.logging_config import configure_logging
 from app.middleware.logging import RequestLoggingMiddleware
-from app.routes import auth, chat, conversations, documents, health, memories, rag, workspaces, analytics
+from app.routes import auth, chat, conversations, documents, health, memories, rag, workspaces, analytics, api_keys, audit
 from app.schemas.common import ErrorResponse
 
 logger = logging.getLogger(__name__)
@@ -227,6 +227,8 @@ def create_app() -> FastAPI:
     app.include_router(rag.router, prefix=API_PREFIX)
     app.include_router(workspaces.router, prefix=API_PREFIX)
     app.include_router(analytics.router, prefix=API_PREFIX)
+    app.include_router(api_keys.router, prefix=API_PREFIX)
+    app.include_router(audit.router, prefix=API_PREFIX)
 
     return app
 
