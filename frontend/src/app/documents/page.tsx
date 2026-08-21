@@ -28,8 +28,9 @@ export default function DocumentsPage() {
     if (!activeWorkspace) return
     try {
       setError("")
-      const res = await documentsApi.list(activeWorkspace.id)
-      setDocuments(res.data)
+      const res: any = await documentsApi.list(activeWorkspace.id)
+      const items = res?.data || (Array.isArray(res) ? res : [])
+      setDocuments(Array.isArray(items) ? items : [])
     } catch (err: any) {
       console.error(err)
       setError("Failed to load documents.")
