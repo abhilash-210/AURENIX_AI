@@ -69,6 +69,23 @@ async def upload_document(
         chunk_overlap=chunk_overlap,
     )
 
+    # Index chunks in vector store
+    try:
+        from app.services.vector_store.service import VectorStoreService
+        vs_service = VectorStoreService()
+        chunks_payload = [
+            {"id": c.chunk_id, "content": c.content, "page_number": c.page_number}
+            for c in result.chunks
+        ]
+        await vs_service.index_document(
+            workspace_id=str(workspace_id),
+            document_id=str(result.document_id),
+            chunks=chunks_payload,
+            source_filename=filename,
+        )
+    except Exception as exc:
+        logging.getLogger(__name__).warning(f"Vector indexing skipped/failed (dev fallback active): {exc}")
+
     doc_record = await service.get_document(result.document_id)
     if not doc_record:
         msg = f"Document '{result.document_id}' not found after ingestion."
