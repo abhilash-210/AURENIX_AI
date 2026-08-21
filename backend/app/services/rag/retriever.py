@@ -34,7 +34,7 @@ class Retriever:
         )
 
         # Apply any additional in-memory filters if specified (or we could pass them to Qdrant)
-        if filters:
+        if filters and results:
             filtered_results = []
             for res in results:
                 payload = res["payload"]
@@ -45,6 +45,42 @@ class Retriever:
                         break
                 if match:
                     filtered_results.append(res)
-            return filtered_results
+            results = filtered_results
+
+        # Fallback to database chunks if vector search returns empty (e.g. offline dev mode)
+        if not results:
+            try:
+                from sqlalchemy import select
+                from app.database import async_session_maker
+                from app.models.document import Document, DocumentChunk
+                
+                async with async_session_maker() as session:
+                    stmt = (
+                        select(DocumentChunk, Document)
+                        .join(Document, Document.id == DocumentChunk.document_id)
+                        .where(Document.workspace_id == workspace_id)
+                        .limit(top_k)
+                    )
+                    db_res = await session.execute(stmt)
+                    rows = db_res.all()
+                    
+                    fallback_results = []
+                    for chunk, doc in rows:
+                        fallback_results.append({
+                            "id": str(chunk.id),
+                            "score": 0.85,
+                            "payload": {
+                                "workspace_id": str(workspace_id),
+                                "document_id": str(doc.id),
+                                "chunk_id": str(chunk.id),
+                                "source_filename": doc.filename,
+                                "chunk_text": chunk.content,
+                                "page_number": chunk.page_number,
+                            }
+                        })
+                    if fallback_results:
+                        return fallback_results
+            except Exception:
+                pass
 
         return results

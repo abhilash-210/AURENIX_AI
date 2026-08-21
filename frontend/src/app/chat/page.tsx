@@ -137,12 +137,13 @@ export default function ChatPage() {
           if (done) break
           
           buffer += decoder.decode(value, { stream: true })
-          const lines = buffer.split('\n\n')
+          const lines = buffer.split('\n')
           buffer = lines.pop() || ""
 
-          for (const line of lines) {
+          for (const rawLine of lines) {
+            const line = rawLine.trim()
             if (line.startsWith("data: ")) {
-              const dataStr = line.slice(6)
+              const dataStr = line.slice(6).trim()
               if (dataStr === "[DONE]") break
               try {
                 const data = JSON.parse(dataStr)
@@ -169,13 +170,15 @@ export default function ChatPage() {
           }
         }
       }
-    } catch (error) {
-      console.error("Streaming error:", error)
+    } catch (err: any) {
+      console.error(err)
       setMessages(prev => {
         const newMsgs = [...prev]
-        newMsgs[newMsgs.length - 1] = {
-          role: "assistant",
-          content: aiContent || "An error occurred while generating the response.",
+        if (newMsgs.length > 0 && newMsgs[newMsgs.length - 1].role === "assistant" && !newMsgs[newMsgs.length - 1].content) {
+          newMsgs[newMsgs.length - 1] = {
+            role: "assistant",
+            content: "Sorry, I encountered an error while retrieving knowledge. Please try sending your question again."
+          }
         }
         return newMsgs
       })

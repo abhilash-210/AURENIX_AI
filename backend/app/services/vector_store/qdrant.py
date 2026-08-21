@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class QdrantError(AurenixError):
     """Error interacting with Qdrant."""
     def __init__(self, message: str, status_code: int = 500) -> None:
-        super().__init__(message=message, error_code="QDRANT_ERROR", status_code=status_code)
+        super().__init__(message=message, code="QDRANT_ERROR", status_code=status_code)
 
 
 class QdrantVectorStore(BaseVectorStore):
@@ -87,6 +87,9 @@ class QdrantVectorStore(BaseVectorStore):
                     field_schema=models.PayloadSchemaType.KEYWORD,
                 )
         except Exception as exc:
+            if not self.settings.is_production:
+                logger.warning(f"Qdrant ensure_collection failed (dev mode): {exc}")
+                return
             raise QdrantError(f"Failed to ensure Qdrant collection: {exc}") from exc
 
     async def upsert_vectors(
@@ -113,6 +116,9 @@ class QdrantVectorStore(BaseVectorStore):
                 points=points,
             )
         except Exception as exc:
+            if not self.settings.is_production:
+                logger.warning(f"Qdrant upsert_vectors failed (dev mode): {exc}")
+                return
             raise QdrantError(f"Failed to upsert vectors to Qdrant: {exc}") from exc
 
     async def delete_document_vectors(self, workspace_id: str, document_id: str) -> None:
@@ -133,6 +139,9 @@ class QdrantVectorStore(BaseVectorStore):
                 ),
             )
         except Exception as exc:
+            if not self.settings.is_production:
+                logger.warning(f"Qdrant delete_document_vectors failed (dev mode): {exc}")
+                return
             raise QdrantError(f"Failed to delete document vectors: {exc}") from exc
 
     async def search_similar(
@@ -143,20 +152,32 @@ class QdrantVectorStore(BaseVectorStore):
         score_threshold: float = 0.0,
     ) -> list[SearchResult]:
         try:
-            results = await self.client.search(
-                collection_name=self.collection_name,
-                query_vector=query_vector,
-                query_filter=models.Filter(
-                    must=[
-                        models.FieldCondition(
-                            key="workspace_id",
-                            match=models.MatchValue(value=workspace_id),
-                        )
-                    ]
-                ),
-                limit=limit,
-                score_threshold=score_threshold,
+            query_filter = models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="workspace_id",
+                        match=models.MatchValue(value=workspace_id),
+                    )
+                ]
             )
+            
+            if hasattr(self.client, "query_points"):
+                response = await self.client.query_points(
+                    collection_name=self.collection_name,
+                    query=query_vector,
+                    query_filter=query_filter,
+                    limit=limit,
+                    score_threshold=score_threshold if score_threshold > 0 else None,
+                )
+                results = getattr(response, "points", response)
+            else:
+                results = await self.client.search(
+                    collection_name=self.collection_name,
+                    query_vector=query_vector,
+                    query_filter=query_filter,
+                    limit=limit,
+                    score_threshold=score_threshold if score_threshold > 0 else None,
+                )
             
             return [
                 SearchResult(
@@ -167,6 +188,9 @@ class QdrantVectorStore(BaseVectorStore):
                 for res in results
             ]
         except Exception as exc:
+            if not self.settings.is_production:
+                logger.warning(f"Qdrant vector search failed (using fallback): {exc}")
+                return []
             raise QdrantError(f"Failed to search Qdrant: {exc}") from exc
 
     async def upsert_memory_vectors(
@@ -186,6 +210,9 @@ class QdrantVectorStore(BaseVectorStore):
                 points=points,
             )
         except Exception as exc:
+            if not self.settings.is_production:
+                logger.warning(f"Qdrant upsert memories failed (dev mode): {exc}")
+                return
             raise QdrantError(f"Failed to upsert memory vectors: {exc}") from exc
 
     async def search_memories(
@@ -213,15 +240,29 @@ class QdrantVectorStore(BaseVectorStore):
             )
 
         try:
-            results = await self.client.search(
-                collection_name=self.memory_collection_name,
-                query_vector=query_vector,
-                query_filter=models.Filter(must=must_conditions) if must_conditions else None,
-                limit=limit,
-                score_threshold=score_threshold,
-            )
+            query_filter = models.Filter(must=must_conditions) if must_conditions else None
+            if hasattr(self.client, "query_points"):
+                response = await self.client.query_points(
+                    collection_name=self.memory_collection_name,
+                    query=query_vector,
+                    query_filter=query_filter,
+                    limit=limit,
+                    score_threshold=score_threshold if score_threshold > 0 else None,
+                )
+                results = getattr(response, "points", response)
+            else:
+                results = await self.client.search(
+                    collection_name=self.memory_collection_name,
+                    query_vector=query_vector,
+                    query_filter=query_filter,
+                    limit=limit,
+                    score_threshold=score_threshold if score_threshold > 0 else None,
+                )
             return [SearchResult(id=str(res.id), score=res.score, payload=res.payload or {}) for res in results]
         except Exception as exc:
+            if not self.settings.is_production:
+                logger.warning(f"Qdrant search memories failed (dev mode): {exc}")
+                return []
             raise QdrantError(f"Failed to search memories: {exc}") from exc
 
     async def delete_memory_vector(self, memory_id: str) -> None:
