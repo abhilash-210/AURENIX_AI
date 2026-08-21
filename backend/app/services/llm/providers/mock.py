@@ -52,14 +52,23 @@ class MockLLMProvider(BaseLLMProvider):
         if "Context:" in system_msg:
             # Extract document text from context
             ctx_text = system_msg.split("Context:\n")[-1].split("Relevant Past Memories:")[0].strip()
-            q_lower = last_user_msg.lower()
-            if "name" in q_lower:
+            if "project" in q_lower:
+                content = (
+                    "Based on Document [1], here are key projects from the resume:\n\n"
+                    "1. **E-Display (Smart Digital Classroom Communication System)**: Built using React.js, MQTT, and Raspberry Pi to broadcast live timetables, faculty updates, and instant notifications.\n"
+                    "2. **Cyber Sentry (Phishing Link Detector)**: Full-stack cybersecurity tool with Python, Flask, React.js, and Domain Intelligence APIs to detect phishing and malicious links.\n"
+                    "3. **Kisan Seva**: Full-stack B2B marketplace connecting farmers and street vendors.\n"
+                    "4. **Student Attendance Tracker**: Automated department attendance system built with Flask and SQLite/MySQL."
+                )
+            elif any(k in q_lower for k in ["candidate name", "his name", "what is the name", "who is the candidate", "person's name", "name of the", "name in the resume", "candidate's name"]) or q_lower.strip() == "name":
                 content = "Based on Document [1], the candidate's name is **Abhilash Gollapally** (Software Developer / Computer Science Undergraduate)."
-            elif "skill" in q_lower or "tech" in q_lower:
-                content = "Based on Document [1], the candidate's core technical skills include:\n- **Programming**: Java, Python, JavaScript, C, SQL\n- **Frontend**: React.js, HTML5, CSS3, Bootstrap\n- **Backend**: Flask, REST APIs, SQLAlchemy, MQTT\n- **Databases**: MySQL, SQLite, Supabase\n- **Tools**: Git, GitHub, Render, Raspberry Pi"
-            elif "project" in q_lower:
-                content = "Based on Document [1], the candidate has developed key projects including:\n1. **E-Display**: Smart classroom communication system using React & Raspberry Pi.\n2. **Cyber Sentry**: Full-stack Phishing Link Detector.\n3. **Kisan Seva**: B2B agricultural marketplace connecting farmers & vendors.\n4. **Student Attendance Tracker**: Automated attendance portal for Cyber Security dept."
-            elif any(k in q_lower for k in ["summary", "who", "about", "person", "resume", "experience", "education"]):
+            elif "skill" in q_lower or "tech" in q_lower or "stack" in q_lower:
+                content = "Based on Document [1], the candidate's core technical skills include:\n- **Programming Languages**: Java, Python, JavaScript, C, SQL\n- **Frontend**: React.js, HTML5, CSS3, Bootstrap\n- **Backend**: Flask, REST APIs, SQLAlchemy, MQTT\n- **Databases**: MySQL, SQLite, Supabase\n- **Tools & Platforms**: Git, GitHub, Render, Raspberry Pi"
+            elif "certificate" in q_lower or "certification" in q_lower or "intern" in q_lower:
+                content = "Based on Document [1], certifications and internships include:\n- **Programming in Java** (NPTEL)\n- **AI/ML Virtual Internship** (EduSkills)\n- **Network Fundamentals** (Cisco)\n- **Python Full Stack Virtual Internship** (EduSkills)\n- **Junior Penetration Tester** (Cybrary)\n- **School of Computing Intern** (Sphoorthy Engineering College)"
+            elif "education" in q_lower or "college" in q_lower or "cgpa" in q_lower:
+                content = "Based on Document [1], education details:\n- **B.Tech CSE (Cyber Security)**: 2023–2027 | **CGPA: 8.89 / 10**\n- **Intermediate (MPC)**: Bhavan's Sri Aurobindo Junior College (2021–2023) | **92.4%**\n- **SSC**: Medha Vidhya Mandir High School (2021) | **CGPA: 10 / 10**"
+            elif any(k in q_lower for k in ["summary", "who", "about", "person", "resume", "experience", "profile"]):
                 content = "According to the uploaded resume [1], **Abhilash Gollapally** is a final-year Computer Science (Cyber Security) undergraduate (CGPA: 8.89 / 10) in Hyderabad, India. He has built 6 full-stack applications using Java, Python, React.js, and Flask, with certifications from NPTEL (Java), Cisco (Network Fundamentals), and EduSkills (AI/ML & Python Full Stack)."
             else:
                 first_chunk = ctx_text.split("Document [2]")[0] if "Document [2]" in ctx_text else ctx_text[:400]

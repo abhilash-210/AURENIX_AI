@@ -234,12 +234,17 @@ export default function ChatPage() {
                       <div className="mt-4 pt-3 border-t border-border/50">
                         <p className="text-xs font-semibold mb-2 opacity-80">Sources</p>
                         <div className="flex flex-wrap gap-2">
-                          {msg.citations.map((cite, idx) => (
-                            <div key={idx} className="bg-background border rounded px-2 py-1 flex flex-col text-xs max-w-[200px]">
-                              <span className="font-medium truncate" title={cite.filename}>{cite.document_index}: {cite.filename}</span>
-                              <span className="opacity-70 truncate text-[10px]">p. {cite.page_number}</span>
-                            </div>
-                          ))}
+                          {msg.citations.map((cite, idx) => {
+                            const name = cite.source?.source_filename || cite.filename || "Resume Document";
+                            const page = cite.source?.page_number || cite.page_number || 1;
+                            const marker = cite.citation_id || `[${idx + 1}]`;
+                            return (
+                              <div key={idx} className="bg-background/80 border rounded-lg px-2.5 py-1.5 flex flex-col text-xs max-w-[220px] shadow-sm">
+                                <span className="font-semibold truncate text-primary" title={name}>{marker} {name}</span>
+                                <span className="text-muted-foreground text-[10px]">Page {page}</span>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
