@@ -63,9 +63,9 @@ class LLMService:
         # Dynamically instantiate requested provider
         if target_name == "openai":
             key = settings.openai_api_key.get_secret_value() if settings.openai_api_key else ""
-            if not key:
+            if not key or key.startswith("your-") or "placeholder" in key.lower() or "changeme" in key.lower():
                 if not settings.is_production:
-                    logger.warning("OpenAI API key missing; falling back to MockLLMProvider in non-prod environment.")
+                    logger.warning("OpenAI API key missing or placeholder; falling back to MockLLMProvider in non-prod environment.")
                     provider: BaseLLMProvider = MockLLMProvider()
                 else:
                     msg = "OPENAI_API_KEY environment variable is missing."
@@ -78,9 +78,9 @@ class LLMService:
                 )
         elif target_name == "anthropic":
             key = settings.anthropic_api_key.get_secret_value() if settings.anthropic_api_key else ""
-            if not key:
+            if not key or key.startswith("your-") or "placeholder" in key.lower() or "changeme" in key.lower():
                 if not settings.is_production:
-                    logger.warning("Anthropic API key missing; falling back to MockLLMProvider in non-prod environment.")
+                    logger.warning("Anthropic API key missing or placeholder; falling back to MockLLMProvider in non-prod environment.")
                     provider = MockLLMProvider()
                 else:
                     msg = "ANTHROPIC_API_KEY environment variable is missing."

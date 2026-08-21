@@ -43,9 +43,9 @@ class EmbeddingService:
 
         if target_name == "openai":
             key = settings.openai_api_key.get_secret_value() if settings.openai_api_key else ""
-            if not key:
+            if not key or key.startswith("your-") or "placeholder" in key.lower() or "changeme" in key.lower():
                 if not settings.is_production:
-                    logger.warning("OpenAI API key missing; falling back to MockEmbeddingProvider.")
+                    logger.warning("OpenAI API key missing or placeholder; falling back to MockEmbeddingProvider.")
                     provider: BaseEmbeddingProvider = MockEmbeddingProvider()
                 else:
                     raise LLMProviderError("OPENAI_API_KEY environment variable is missing.")
