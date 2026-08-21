@@ -50,15 +50,19 @@ class Retriever:
         # Fallback to database chunks if vector search returns empty (e.g. offline dev mode)
         if not results:
             try:
+                import uuid
+                import logging
                 from sqlalchemy import select
-                from app.database import async_session_maker
+                from app.database import AsyncSessionLocal
                 from app.models.document import Document, DocumentChunk
                 
-                async with async_session_maker() as session:
+                ws_uuid = uuid.UUID(str(workspace_id))
+                async with AsyncSessionLocal() as session:
                     stmt = (
                         select(DocumentChunk, Document)
                         .join(Document, Document.id == DocumentChunk.document_id)
-                        .where(Document.workspace_id == workspace_id)
+                        .where(Document.workspace_id == ws_uuid)
+                        .order_by(DocumentChunk.chunk_index.asc())
                         .limit(top_k)
                     )
                     db_res = await session.execute(stmt)
@@ -80,7 +84,7 @@ class Retriever:
                         })
                     if fallback_results:
                         return fallback_results
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning(f"Retriever DB fallback failed: {exc}")
 
         return results
