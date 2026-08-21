@@ -35,6 +35,7 @@ async def sample_user(db_session: AsyncSession) -> User:
 
 @pytest.fixture
 async def sample_workspace(db_session: AsyncSession, sample_user: User) -> Workspace:
+    from app.models.workspace import WorkspaceMember
     ws_id = uuid.uuid4()
     workspace = Workspace(
         id=ws_id,
@@ -42,6 +43,14 @@ async def sample_workspace(db_session: AsyncSession, sample_user: User) -> Works
         slug=f"ingest-ws-{ws_id.hex[:8]}",
     )
     db_session.add(workspace)
+    await db_session.flush()
+
+    member = WorkspaceMember(
+        workspace_id=workspace.id,
+        user_id=sample_user.id,
+        role="owner",
+    )
+    db_session.add(member)
     await db_session.commit()
     return workspace
 

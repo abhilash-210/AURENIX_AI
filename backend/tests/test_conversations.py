@@ -1,5 +1,5 @@
 import uuid
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -36,7 +36,7 @@ async def test_create_conversation(mock_db):
 @pytest.mark.asyncio
 async def test_get_conversation_forbidden(mock_db, monkeypatch):
     # Setup mock to return a conversation with a different owner
-    mock_result = AsyncMock()
+    mock_result = MagicMock()
     mock_conv = Conversation(
         id=uuid.uuid4(),
         workspace_id=uuid.uuid4(),
@@ -53,7 +53,7 @@ async def test_get_conversation_forbidden(mock_db, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_get_conversation_not_found(mock_db):
-    mock_result = AsyncMock()
+    mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
     mock_db.execute.return_value = mock_result
     
@@ -73,8 +73,8 @@ async def test_stream_rag_chat_no_results(mock_db, monkeypatch):
     )
     
     # Mock the DB calls for fetching history (empty for now)
-    mock_result = AsyncMock()
-    mock_result.scalars().all.return_value = []
+    mock_result = MagicMock()
+    mock_result.scalars.return_value.all.return_value = []
     mock_db.execute.return_value = mock_result
     
     service = ChatService(mock_db)

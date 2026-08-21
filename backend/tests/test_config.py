@@ -33,8 +33,9 @@ class TestSettingsDefaults:
         s = Settings()
         assert s.port == 8000
 
-    def test_default_debug_is_false(self) -> None:
-        s = Settings()
+    def test_default_debug_is_false(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("DEBUG", raising=False)
+        s = Settings(_env_file=None)
         assert s.debug is False
 
     def test_default_log_level_is_info(self, monkeypatch: pytest.MonkeyPatch) -> None:

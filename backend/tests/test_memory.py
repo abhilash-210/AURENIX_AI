@@ -1,5 +1,5 @@
 import uuid
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,8 +24,8 @@ def mock_vector_store(monkeypatch):
 async def test_get_memories_scoping(mock_db, mock_vector_store, monkeypatch):
     service = MemoryService(mock_db)
     
-    mock_result = AsyncMock()
-    mock_result.scalars().all.return_value = [
+    mock_result = MagicMock()
+    mock_result.scalars.return_value.all.return_value = [
         Memory(id=uuid.uuid4(), scope=MemoryScope.USER, content="User preference"),
     ]
     mock_db.execute.return_value = mock_result
@@ -47,7 +47,7 @@ async def test_delete_memory_cascades_to_qdrant(mock_db, mock_vector_store, monk
     mem_id = uuid.uuid4()
     user_id = uuid.uuid4()
     
-    mock_result = AsyncMock()
+    mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = Memory(id=mem_id, user_id=user_id)
     mock_db.execute.return_value = mock_result
     

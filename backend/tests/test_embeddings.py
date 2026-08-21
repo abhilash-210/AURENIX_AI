@@ -20,13 +20,17 @@ async def test_mock_embedding_provider():
 
 @pytest.mark.asyncio
 async def test_embedding_service_mock_fallback(monkeypatch):
-    # Missing API key should fallback to mock
+    from app.config import get_settings
+    # Missing API key should fallback to mock in non-production
     monkeypatch.setenv("OPENAI_API_KEY", "")
+    monkeypatch.setenv("APP_ENV", "testing")
+    get_settings.cache_clear()
     
     service = EmbeddingService()
     provider = service.get_provider("openai")
     
     assert provider.name == "mock"
+    get_settings.cache_clear()
 
 
 @pytest.mark.asyncio
