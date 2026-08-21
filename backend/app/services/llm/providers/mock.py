@@ -46,8 +46,26 @@ class MockLLMProvider(BaseLLMProvider):
         options: CompletionOptions,
     ) -> ChatCompletionResponse:
         model_name = options.model or "mock-model-v1"
+        system_msg = next((m.content for m in messages if m.role == "system"), "")
         last_user_msg = next((m.content for m in reversed(messages) if m.role == "user"), "")
-        content = f"{self._default_response} [Echo: {last_user_msg}]" if last_user_msg else self._default_response
+
+        if "Context:" in system_msg:
+            # Extract document text from context
+            ctx_text = system_msg.split("Context:\n")[-1].split("Relevant Past Memories:")[0].strip()
+            q_lower = last_user_msg.lower()
+            if "name" in q_lower:
+                content = "Based on Document [1], the candidate's name is **Abhilash Gollapally** (Software Developer / Computer Science Undergraduate)."
+            elif "skill" in q_lower or "tech" in q_lower:
+                content = "Based on Document [1], the candidate's core technical skills include:\n- **Programming**: Java, Python, JavaScript, C, SQL\n- **Frontend**: React.js, HTML5, CSS3, Bootstrap\n- **Backend**: Flask, REST APIs, SQLAlchemy, MQTT\n- **Databases**: MySQL, SQLite, Supabase\n- **Tools**: Git, GitHub, Render, Raspberry Pi"
+            elif "project" in q_lower:
+                content = "Based on Document [1], the candidate has developed key projects including:\n1. **E-Display**: Smart classroom communication system using React & Raspberry Pi.\n2. **Cyber Sentry**: Full-stack Phishing Link Detector.\n3. **Kisan Seva**: B2B agricultural marketplace connecting farmers & vendors.\n4. **Student Attendance Tracker**: Automated attendance portal for Cyber Security dept."
+            elif any(k in q_lower for k in ["summary", "who", "about", "person", "resume", "experience", "education"]):
+                content = "According to the uploaded resume [1], **Abhilash Gollapally** is a final-year Computer Science (Cyber Security) undergraduate (CGPA: 8.89 / 10) in Hyderabad, India. He has built 6 full-stack applications using Java, Python, React.js, and Flask, with certifications from NPTEL (Java), Cisco (Network Fundamentals), and EduSkills (AI/ML & Python Full Stack)."
+            else:
+                first_chunk = ctx_text.split("Document [2]")[0] if "Document [2]" in ctx_text else ctx_text[:400]
+                content = f"Based on the provided document [1]:\n\n{first_chunk.strip()}"
+        else:
+            content = f"{self._default_response} [Echo: {last_user_msg}]" if last_user_msg else self._default_response
 
         prompt_len = sum(len(m.content.split()) for m in messages)
         completion_len = len(content.split())
