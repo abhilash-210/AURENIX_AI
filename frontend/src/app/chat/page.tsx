@@ -50,8 +50,9 @@ export default function ChatPage() {
     if (!activeWorkspace) return
     try {
       setIsLoadingList(true)
-      const res = await convApi.list(activeWorkspace.id)
-      setConversations(res.data.items)
+      const res: any = await convApi.list(activeWorkspace.id)
+      const items = res?.data?.items || res?.items || (Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []))
+      setConversations(Array.isArray(items) ? items : [])
     } catch (error) {
       console.error(error)
     } finally {
@@ -63,13 +64,16 @@ export default function ChatPage() {
     setActiveConvId(id)
     setMessages([])
     try {
-      const res = await convApi.getMessages(id)
-      setMessages(res.data.items.map((m: any) => ({
-        id: m.id,
-        role: m.role,
-        content: m.content,
-        citations: m.citations,
-      })))
+      const res: any = await convApi.getMessages(id)
+      const items = res?.data?.items || res?.items || (Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []))
+      if (Array.isArray(items)) {
+        setMessages(items.map((m: any) => ({
+          id: m.id,
+          role: m.role,
+          content: m.content,
+          citations: m.citations,
+        })))
+      }
     } catch (error) {
       console.error(error)
     }
@@ -78,9 +82,12 @@ export default function ChatPage() {
   const handleNewConversation = async () => {
     if (!activeWorkspace) return
     try {
-      const res = await convApi.create(activeWorkspace.id, { title: "New Conversation" })
-      setConversations([res.data, ...conversations])
-      setActiveConvId(res.data.id)
+      const res: any = await convApi.create(activeWorkspace.id, { title: "New Conversation" })
+      const newConv = res?.data || res
+      if (newConv && newConv.id) {
+        setConversations(prev => [newConv, ...prev.filter(c => c && c.id !== newConv.id)])
+        setActiveConvId(newConv.id)
+      }
       setMessages([])
     } catch (error) {
       console.error(error)
@@ -94,10 +101,17 @@ export default function ChatPage() {
     let currentConvId = activeConvId
     if (!currentConvId) {
       if (!activeWorkspace) return
-      const res = await convApi.create(activeWorkspace.id, { title: inputValue.slice(0, 30) + "..." })
-      setConversations([res.data, ...conversations])
-      currentConvId = res.data.id
-      setActiveConvId(currentConvId)
+      try {
+        const res: any = await convApi.create(activeWorkspace.id, { title: inputValue.slice(0, 30) + "..." })
+        const newConv = res?.data || res
+        if (newConv && newConv.id) {
+          setConversations(prev => [newConv, ...prev.filter(c => c && c.id !== newConv.id)])
+          currentConvId = newConv.id
+          setActiveConvId(currentConvId)
+        }
+      } catch (err) {
+        console.error("Failed to create conversation on send:", err)
+      }
     }
 
     const userMsg = inputValue
@@ -186,14 +200,14 @@ export default function ChatPage() {
               <div className="flex justify-center p-4">
                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
               </div>
-            ) : conversations.map(c => (
+            ) : conversations.filter(c => Boolean(c && c.id)).map(c => (
               <button
                 key={c.id}
                 onClick={() => handleSelectConversation(c.id)}
                 className={`w-full text-left px-3 py-2 text-sm rounded-lg flex items-center space-x-2 transition-colors ${activeConvId === c.id ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted text-muted-foreground'}`}
               >
                 <MessageSquare className="h-4 w-4 shrink-0" />
-                <span className="truncate">{c.title}</span>
+                <span className="truncate">{c.title || "Untitled Conversation"}</span>
               </button>
             ))}
           </div>
