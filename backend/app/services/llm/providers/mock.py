@@ -52,7 +52,10 @@ class MockLLMProvider(BaseLLMProvider):
         if "Context:" in system_msg:
             # Extract document text from context
             ctx_text = system_msg.split("Context:\n")[-1].split("Relevant Past Memories:")[0].strip()
-            if "project" in q_lower:
+            q_lower = last_user_msg.lower()
+            if "softskill" in q_lower or "soft skill" in q_lower or ("soft" in q_lower and "skill" in q_lower):
+                content = "Based on Document [1], the candidate's soft skills include:\n- **Problem Solving**\n- **Team Collaboration**\n- **Communication**\n- **Quick Learner**\n- **Adaptability**\n- **Leadership**"
+            elif "project" in q_lower:
                 content = (
                     "Based on Document [1], here are key projects from the resume:\n\n"
                     "1. **E-Display (Smart Digital Classroom Communication System)**: Built using React.js, MQTT, and Raspberry Pi to broadcast live timetables, faculty updates, and instant notifications.\n"
