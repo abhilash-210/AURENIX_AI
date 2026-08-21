@@ -10,19 +10,28 @@ import logging
 from app.config import get_settings
 from app.exceptions import LLMError, LLMProviderError, LLMRateLimitError, LLMTimeoutError
 from app.services.embeddings.base import BaseEmbeddingProvider
+from app.services.embeddings.cache import EmbeddingCache
 from app.services.embeddings.providers.mock import MockEmbeddingProvider
 from app.services.embeddings.providers.openai import OpenAIEmbeddingProvider
 
 logger = logging.getLogger(__name__)
 
+# Global singleton cache instance shared across requests
+_GLOBAL_EMBEDDING_CACHE = EmbeddingCache(max_size=5000)
+
 
 class EmbeddingService:
     """
-    Gateway service for text embeddings with provider fallback and retries.
+    Gateway service for text embeddings with provider fallback, caching, and retries.
     """
 
-    def __init__(self, providers: dict[str, BaseEmbeddingProvider] | None = None) -> None:
+    def __init__(
+        self,
+        providers: dict[str, BaseEmbeddingProvider] | None = None,
+        cache: EmbeddingCache | None = None,
+    ) -> None:
         self._providers: dict[str, BaseEmbeddingProvider] = providers or {}
+        self.cache: EmbeddingCache = cache or _GLOBAL_EMBEDDING_CACHE
 
     def get_provider(self, name: str | None = None) -> BaseEmbeddingProvider:
         """Resolve and return a provider instance by name."""
@@ -105,19 +114,56 @@ class EmbeddingService:
     async def embed_batch(
         self, texts: list[str], provider_name: str | None = None
     ) -> list[list[float]]:
-        """Embed a batch of texts with retry logic."""
+        """Embed a batch of texts with LRU caching and retry logic."""
         if not texts:
             return []
 
         provider = self.get_provider(provider_name)
+        settings = get_settings()
+        model_name = getattr(provider, "_default_model", settings.embedding_model)
+
+        # 1. Check LRU Cache
+        cached_hits, uncached_items = self.cache.get_batch(texts, provider.name, model_name)
+
+        # If everything is cached, return assembled vectors immediately
+        if not uncached_items:
+            return [cached_hits[i] for i in range(len(texts))]
+
+        # 2. Fetch uncached items from upstream provider
+        uncached_texts = [text for _, text in uncached_items]
 
         async def _call():
-            return await provider.embed_batch(texts)
+            return await provider.embed_batch(uncached_texts)
 
-        return await self._execute_with_retry(_call, provider.name)
+        fresh_vectors = await self._execute_with_retry(_call, provider.name)
+
+        # 3. Store new vectors in cache
+        cache_inserts = [
+            (text, vec) for (_, text), vec in zip(uncached_items, fresh_vectors, strict=False)
+        ]
+        self.cache.put_batch(cache_inserts, provider.name, model_name)
+
+        # 4. Merge cached and freshly computed vectors into original order
+        final_results: list[list[float]] = [[] for _ in range(len(texts))]
+        for idx, vec in cached_hits.items():
+            final_results[idx] = vec
+
+        for (orig_idx, _), vec in zip(uncached_items, fresh_vectors, strict=False):
+            final_results[orig_idx] = vec
+
+        return final_results
 
     async def embed_text(self, text: str, provider_name: str | None = None) -> list[float]:
-        """Embed a single text string."""
+        """Embed a single text string with cache checking."""
+        provider = self.get_provider(provider_name)
+        settings = get_settings()
+        model_name = getattr(provider, "_default_model", settings.embedding_model)
+
+        # Fast-path single text cache check
+        cached = self.cache.get(text, provider.name, model_name)
+        if cached is not None:
+            return cached
+
         results = await self.embed_batch([text], provider_name)
         if not results:
             raise LLMProviderError("Empty embedding result returned")

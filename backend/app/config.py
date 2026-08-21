@@ -92,6 +92,28 @@ class Settings(BaseSettings):
             "Defaults to SQLite for zero-config local development."
         ),
     )
+    db_pool_size: int = Field(
+        default=20,
+        ge=1,
+        le=100,
+        description="SQLAlchemy connection pool size for PostgreSQL",
+    )
+    db_max_overflow: int = Field(
+        default=10,
+        ge=0,
+        le=50,
+        description="Maximum overflow connections beyond pool size",
+    )
+    db_pool_timeout: float = Field(
+        default=30.0,
+        ge=1.0,
+        description="Connection checkout timeout in seconds",
+    )
+    db_pool_recycle: int = Field(
+        default=1800,
+        ge=60,
+        description="Recycle connections older than this number of seconds",
+    )
 
     # ──────────────────────────────────────────────────────────────────────────
     # JWT Authentication

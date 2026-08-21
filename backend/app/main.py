@@ -34,6 +34,7 @@ from app.database import create_db_tables, engine
 from app.exceptions import AurenixError, AuthenticationError, ForbiddenError
 from app.logging_config import configure_logging
 from app.middleware.logging import RequestLoggingMiddleware
+from app.middleware.rate_limit import RateLimitMiddleware
 from app.routes import auth, chat, conversations, documents, health, memories, rag, workspaces, analytics, api_keys, audit
 from app.schemas.common import ErrorResponse
 
@@ -122,6 +123,10 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    app.add_middleware(
+        RateLimitMiddleware,
+        requests_per_minute=120 if not settings.is_testing else 10000,
+    )
     app.add_middleware(RequestLoggingMiddleware)
 
     # ── Exception handlers ────────────────────────────────────────────────────

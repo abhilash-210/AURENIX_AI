@@ -37,6 +37,24 @@ class RAGService:
         processed_query = self.processor.process(query.query)
         logger.info(f"RAG query processed. workspace_id={workspace_id}")
 
+        # Fast-path for conversational greetings (bypasses vector DB search)
+        if self.processor.is_conversational_greeting(processed_query):
+            greeting_messages = [
+                ChatMessage(
+                    role="system",
+                    content="You are Aurenix AI, an enterprise intelligence assistant. Respond cordially, professionally, and concisely to the greeting.",
+                ),
+                ChatMessage(role="user", content=processed_query),
+            ]
+            greeting_response = await self.llm_service.complete(
+                messages=greeting_messages,
+                options=CompletionOptions(temperature=0.3),
+            )
+            return RAGResponse(
+                answer=greeting_response.content,
+                citations=[],
+            )
+
         # 2. Retrieve Documents
         retrieved_results = await self.retriever.retrieve(
             workspace_id=workspace_id,

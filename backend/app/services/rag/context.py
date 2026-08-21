@@ -9,30 +9,54 @@ from app.services.rag.schemas import Citation, SourceDocument
 
 class ContextBuilder:
     """
-    Builds the LLM context prompt from retrieved and reranked chunks.
+    Builds the LLM context prompt from retrieved and reranked chunks with
+    deduplication and maximum character token budgeting.
     """
+
+    def __init__(self, max_context_chars: int = 8000) -> None:
+        self.max_context_chars = max_context_chars
 
     def build_context(self, results: list[dict[str, Any]]) -> str:
         """
         Format the chunks into a readable string for the LLM.
-        We assign an index [1], [2], etc., to each chunk to encourage the LLM to cite them.
+        Deduplicates identical/near-identical chunks and enforces max_context_chars.
         """
         if not results:
             return ""
 
-        context_parts = []
-        for idx, res in enumerate(results, start=1):
+        context_parts: list[str] = []
+        seen_texts: set[str] = set()
+        current_length = 0
+
+        doc_idx = 1
+        for res in results:
             payload = res.get("payload", {})
-            text = payload.get("chunk_text", "")
+            text = payload.get("chunk_text", "").strip()
+            if not text:
+                continue
+
+            # Deduplicate repeated chunks
+            normalized_key = " ".join(text.lower().split()[:20])
+            if normalized_key in seen_texts:
+                continue
+            seen_texts.add(normalized_key)
+
             filename = payload.get("source_filename", "Unknown")
             page = payload.get("page_number")
-            
+
             meta_str = f"Source: {filename}"
             if page is not None:
                 meta_str += f", Page: {page}"
-                
-            context_parts.append(f"Document [{idx}] ({meta_str}):\n{text}\n")
-            
+
+            entry = f"Document [{doc_idx}] ({meta_str}):\n{text}\n"
+            if current_length + len(entry) > self.max_context_chars and context_parts:
+                # Stop adding more chunks if character budget is exhausted
+                break
+
+            context_parts.append(entry)
+            current_length += len(entry)
+            doc_idx += 1
+
         return "\n".join(context_parts)
 
 

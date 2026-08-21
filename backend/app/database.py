@@ -42,20 +42,28 @@ def _build_engine() -> AsyncEngine:
     Construct the async SQLAlchemy engine from application settings.
 
     SQLite requires ``check_same_thread=False`` because the async driver
-    can hand the connection to a different thread.  This flag is silently
-    ignored by PostgreSQL drivers.
+    can hand the connection to a different thread.  For PostgreSQL, connection
+    pooling parameters (pool_size, max_overflow, pool_recycle) are configured.
     """
     settings = get_settings()
     connect_args: dict[str, Any] = {}
+    engine_kwargs: dict[str, Any] = {
+        "echo": settings.debug,
+        "pool_pre_ping": True,
+    }
 
     if "sqlite" in settings.database_url:
         connect_args["check_same_thread"] = False
+    else:
+        engine_kwargs["pool_size"] = settings.db_pool_size
+        engine_kwargs["max_overflow"] = settings.db_max_overflow
+        engine_kwargs["pool_timeout"] = settings.db_pool_timeout
+        engine_kwargs["pool_recycle"] = settings.db_pool_recycle
 
     return create_async_engine(
         settings.database_url,
-        echo=settings.debug,  # log SQL in debug mode
-        pool_pre_ping=True,   # detect stale connections
         connect_args=connect_args,
+        **engine_kwargs,
     )
 
 
