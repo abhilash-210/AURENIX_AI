@@ -1,0 +1,693 @@
+{
+  "timestamp": "2026-08-21T06:15:20.449587+00:00",
+  "total_samples": 12,
+  "successful_samples": 12,
+  "failed_samples": 0,
+  "error_rate": 0.0,
+  "retrieval": {
+    "hit_rate": {
+      "mean": 1.0,
+      "median": 1.0,
+      "p95": 1.0,
+      "min": 1.0,
+      "max": 1.0
+    },
+    "precision_at_k": {
+      "mean": 1.0,
+      "median": 1.0,
+      "p95": 1.0,
+      "min": 1.0,
+      "max": 1.0
+    },
+    "recall_at_k": {
+      "mean": 1.0,
+      "median": 1.0,
+      "p95": 1.0,
+      "min": 1.0,
+      "max": 1.0
+    },
+    "mrr": {
+      "mean": 1.0,
+      "median": 1.0,
+      "p95": 1.0,
+      "min": 1.0,
+      "max": 1.0
+    }
+  },
+  "generation": {
+    "answer_relevance": {
+      "mean": 1.0,
+      "median": 1.0,
+      "p95": 1.0,
+      "min": 1.0,
+      "max": 1.0
+    },
+    "faithfulness": {
+      "mean": 0.9167,
+      "median": 1.0,
+      "p95": 1.0,
+      "min": 0.0,
+      "max": 1.0
+    },
+    "citation_correctness": {
+      "mean": 0.875,
+      "median": 1.0,
+      "p95": 1.0,
+      "min": 0.7,
+      "max": 1.0
+    }
+  },
+  "performance": {
+    "retrieval_latency_ms": {
+      "mean": 4.2,
+      "median": 4.2,
+      "p95": 4.2,
+      "min": 4.2,
+      "max": 4.2
+    },
+    "generation_latency_ms": {
+      "mean": 120.5,
+      "median": 120.5,
+      "p95": 120.5,
+      "min": 120.5,
+      "max": 120.5
+    },
+    "total_latency_ms": {
+      "mean": 124.7,
+      "median": 124.7,
+      "p95": 124.7,
+      "min": 124.7,
+      "max": 124.7
+    }
+  },
+  "category_breakdown": {
+    "data_governance": {
+      "count": 2.0,
+      "hit_rate": 1.0,
+      "relevance": 1.0,
+      "faithfulness": 1.0,
+      "citation_correctness": 0.85
+    },
+    "cloud_infrastructure": {
+      "count": 2.0,
+      "hit_rate": 1.0,
+      "relevance": 1.0,
+      "faithfulness": 1.0,
+      "citation_correctness": 0.85
+    },
+    "security_compliance": {
+      "count": 2.0,
+      "hit_rate": 1.0,
+      "relevance": 1.0,
+      "faithfulness": 1.0,
+      "citation_correctness": 0.85
+    },
+    "api_engineering": {
+      "count": 2.0,
+      "hit_rate": 1.0,
+      "relevance": 1.0,
+      "faithfulness": 1.0,
+      "citation_correctness": 0.85
+    },
+    "hr_policies": {
+      "count": 2.0,
+      "hit_rate": 1.0,
+      "relevance": 1.0,
+      "faithfulness": 1.0,
+      "citation_correctness": 0.85
+    },
+    "legal_procurement": {
+      "count": 2.0,
+      "hit_rate": 1.0,
+      "relevance": 1.0,
+      "faithfulness": 0.5,
+      "citation_correctness": 1.0
+    }
+  },
+  "item_results": [
+    {
+      "item": {
+        "id": "SEC-001",
+        "category": "security_compliance",
+        "question": "What is the mandatory password rotation schedule and minimum length requirement under our SOC 2 policy?",
+        "ground_truth_answer": "Under the SOC 2 Access Control Policy §4.2, passwords must be rotated every 90 days and must be a minimum of 14 characters in length with multi-factor authentication (MFA) enabled.",
+        "reference_contexts": [
+          "SOC 2 Security Policy §4.2: All employee passwords for production systems and corporate SSO must be at least 14 characters in length, containing uppercase, lowercase, numbers, and special characters. Passwords must be rotated every 90 days. Multi-Factor Authentication (MFA) is strictly mandatory for all accounts.",
+          "Access Control Guidelines: Passwords older than 90 days will automatically trigger an account lock until reset through the self-service IT portal."
+        ],
+        "key_facts": [
+          "Password must be at least 14 characters long",
+          "Password rotation is mandatory every 90 days",
+          "MFA is mandatory"
+        ]
+      },
+      "retrieved_contexts": [
+        "SOC 2 Security Policy §4.2: All employee passwords for production systems and corporate SSO must be at least 14 characters in length, containing uppercase, lowercase, numbers, and special characters. Passwords must be rotated every 90 days. Multi-Factor Authentication (MFA) is strictly mandatory for all accounts.",
+        "Access Control Guidelines: Passwords older than 90 days will automatically trigger an account lock until reset through the self-service IT portal."
+      ],
+      "generated_answer": "Under the SOC 2 Access Control Policy §4.2, passwords must be rotated every 90 days and must be a minimum of 14 characters in length with multi-factor authentication (MFA) enabled. [1]",
+      "citations": [
+        {
+          "document_id": "doc-ref-1",
+          "index": 1
+        }
+      ],
+      "retrieval_metrics": {
+        "hit_rate": 1.0,
+        "precision_at_k": 1.0,
+        "recall_at_k": 1.0,
+        "mrr": 1.0
+      },
+      "generation_metrics": {
+        "answer_relevance": 1.0,
+        "faithfulness": 1.0,
+        "citation_correctness": 0.7
+      },
+      "performance_metrics": {
+        "retrieval_latency_ms": 4.2,
+        "generation_latency_ms": 120.5,
+        "total_latency_ms": 124.7,
+        "prompt_tokens": 214,
+        "completion_tokens": 124,
+        "total_tokens": 338
+      },
+      "success": true,
+      "error_message": null
+    },
+    {
+      "item": {
+        "id": "SEC-002",
+        "category": "security_compliance",
+        "question": "What are the cryptographic key rotation requirements for customer data encryption keys stored in KMS?",
+        "ground_truth_answer": "Customer data encryption keys (DEKs) in KMS must be rotated automatically every 365 days, while master keys (KEKs) must undergo annual cryptoperiod audits.",
+        "reference_contexts": [
+          "KMS Key Management Standard §2.1: Data Encryption Keys (DEKs) protecting data at rest must have automatic annual rotation enabled (every 365 days). Key Encryption Keys (KEKs) stored in Cloud HSM must undergo annual cryptographic review and compliance verification."
+        ],
+        "key_facts": [
+          "Data Encryption Keys must rotate automatically every 365 days",
+          "Key Encryption Keys are audited annually"
+        ]
+      },
+      "retrieved_contexts": [
+        "KMS Key Management Standard §2.1: Data Encryption Keys (DEKs) protecting data at rest must have automatic annual rotation enabled (every 365 days). Key Encryption Keys (KEKs) stored in Cloud HSM must undergo annual cryptographic review and compliance verification."
+      ],
+      "generated_answer": "Customer data encryption keys (DEKs) in KMS must be rotated automatically every 365 days, while master keys (KEKs) must undergo annual cryptoperiod audits. [1]",
+      "citations": [
+        {
+          "document_id": "doc-ref-1",
+          "index": 1
+        }
+      ],
+      "retrieval_metrics": {
+        "hit_rate": 1.0,
+        "precision_at_k": 1.0,
+        "recall_at_k": 1.0,
+        "mrr": 1.0
+      },
+      "generation_metrics": {
+        "answer_relevance": 1.0,
+        "faithfulness": 1.0,
+        "citation_correctness": 1.0
+      },
+      "performance_metrics": {
+        "retrieval_latency_ms": 4.2,
+        "generation_latency_ms": 120.5,
+        "total_latency_ms": 124.7,
+        "prompt_tokens": 210,
+        "completion_tokens": 96,
+        "total_tokens": 306
+      },
+      "success": true,
+      "error_message": null
+    },
+    {
+      "item": {
+        "id": "INFRA-001",
+        "category": "cloud_infrastructure",
+        "question": "What are the Recovery Time Objective (RTO) and Recovery Point Objective (RPO) targets for Tier-1 production databases?",
+        "ground_truth_answer": "For Tier-1 production databases, the Recovery Time Objective (RTO) is 15 minutes and the Recovery Point Objective (RPO) is 1 minute.",
+        "reference_contexts": [
+          "Business Continuity & Disaster Recovery Plan §3.1: Tier-1 production databases (PostgreSQL primary cluster) must adhere to an RTO of no more than 15 minutes and an RPO of no more than 1 minute. WAL streaming replication is maintained across two availability zones.",
+          "Disaster Recovery SLA Table: Tier-1 databases target 15-minute failover RTO with 60-second asynchronous snapshot RPO."
+        ],
+        "key_facts": [
+          "RTO target is 15 minutes",
+          "RPO target is 1 minute",
+          "Applies to Tier-1 production databases"
+        ]
+      },
+      "retrieved_contexts": [
+        "Business Continuity & Disaster Recovery Plan §3.1: Tier-1 production databases (PostgreSQL primary cluster) must adhere to an RTO of no more than 15 minutes and an RPO of no more than 1 minute. WAL streaming replication is maintained across two availability zones.",
+        "Disaster Recovery SLA Table: Tier-1 databases target 15-minute failover RTO with 60-second asynchronous snapshot RPO."
+      ],
+      "generated_answer": "For Tier-1 production databases, the Recovery Time Objective (RTO) is 15 minutes and the Recovery Point Objective (RPO) is 1 minute. [1]",
+      "citations": [
+        {
+          "document_id": "doc-ref-1",
+          "index": 1
+        }
+      ],
+      "retrieval_metrics": {
+        "hit_rate": 1.0,
+        "precision_at_k": 1.0,
+        "recall_at_k": 1.0,
+        "mrr": 1.0
+      },
+      "generation_metrics": {
+        "answer_relevance": 1.0,
+        "faithfulness": 1.0,
+        "citation_correctness": 1.0
+      },
+      "performance_metrics": {
+        "retrieval_latency_ms": 4.2,
+        "generation_latency_ms": 120.5,
+        "total_latency_ms": 124.7,
+        "prompt_tokens": 218,
+        "completion_tokens": 88,
+        "total_tokens": 306
+      },
+      "success": true,
+      "error_message": null
+    },
+    {
+      "item": {
+        "id": "INFRA-002",
+        "category": "cloud_infrastructure",
+        "question": "How does the Kubernetes Horizontal Pod Autoscaler (HPA) scale the backend API pods?",
+        "ground_truth_answer": "The backend HPA scales pods when average CPU utilization exceeds 70% or memory utilization exceeds 80%, maintaining a minimum of 3 replicas and a maximum of 30 replicas.",
+        "reference_contexts": [
+          "Kubernetes Scaling Architecture: The backend API deployment uses HPA targeting 70% average CPU utilization and 80% memory utilization. The cluster autoscaling policy maintains minReplicas: 3 and maxReplicas: 30."
+        ],
+        "key_facts": [
+          "CPU threshold is 70%",
+          "Memory threshold is 80%",
+          "Minimum 3 replicas, maximum 30 replicas"
+        ]
+      },
+      "retrieved_contexts": [
+        "Kubernetes Scaling Architecture: The backend API deployment uses HPA targeting 70% average CPU utilization and 80% memory utilization. The cluster autoscaling policy maintains minReplicas: 3 and maxReplicas: 30."
+      ],
+      "generated_answer": "The backend HPA scales pods when average CPU utilization exceeds 70% or memory utilization exceeds 80%, maintaining a minimum of 3 replicas and a maximum of 30 replicas. [1]",
+      "citations": [
+        {
+          "document_id": "doc-ref-1",
+          "index": 1
+        }
+      ],
+      "retrieval_metrics": {
+        "hit_rate": 1.0,
+        "precision_at_k": 1.0,
+        "recall_at_k": 1.0,
+        "mrr": 1.0
+      },
+      "generation_metrics": {
+        "answer_relevance": 1.0,
+        "faithfulness": 1.0,
+        "citation_correctness": 0.7
+      },
+      "performance_metrics": {
+        "retrieval_latency_ms": 4.2,
+        "generation_latency_ms": 120.5,
+        "total_latency_ms": 124.7,
+        "prompt_tokens": 202,
+        "completion_tokens": 116,
+        "total_tokens": 318
+      },
+      "success": true,
+      "error_message": null
+    },
+    {
+      "item": {
+        "id": "HR-001",
+        "category": "hr_policies",
+        "question": "What is the paid parental leave allowance for primary and secondary caregivers?",
+        "ground_truth_answer": "Primary caregivers are entitled to 16 weeks of fully paid parental leave, while secondary caregivers are entitled to 8 weeks of fully paid leave, eligible after 6 months of continuous employment.",
+        "reference_contexts": [
+          "Global Employee Handbook 2026 §6.3: Eligible full-time employees with at least 6 months of tenure receive 16 weeks of 100% paid parental leave as primary caregivers, or 8 weeks of 100% paid parental leave as secondary caregivers. Leave can be taken continuously or in two equal blocks within the first 12 months."
+        ],
+        "key_facts": [
+          "Primary caregivers receive 16 weeks of paid leave",
+          "Secondary caregivers receive 8 weeks of paid leave",
+          "Requires 6 months of continuous tenure"
+        ]
+      },
+      "retrieved_contexts": [
+        "Global Employee Handbook 2026 §6.3: Eligible full-time employees with at least 6 months of tenure receive 16 weeks of 100% paid parental leave as primary caregivers, or 8 weeks of 100% paid parental leave as secondary caregivers. Leave can be taken continuously or in two equal blocks within the first 12 months."
+      ],
+      "generated_answer": "Primary caregivers are entitled to 16 weeks of fully paid parental leave, while secondary caregivers are entitled to 8 weeks of fully paid leave, eligible after 6 months of continuous employment. [1]",
+      "citations": [
+        {
+          "document_id": "doc-ref-1",
+          "index": 1
+        }
+      ],
+      "retrieval_metrics": {
+        "hit_rate": 1.0,
+        "precision_at_k": 1.0,
+        "recall_at_k": 1.0,
+        "mrr": 1.0
+      },
+      "generation_metrics": {
+        "answer_relevance": 1.0,
+        "faithfulness": 1.0,
+        "citation_correctness": 0.7
+      },
+      "performance_metrics": {
+        "retrieval_latency_ms": 4.2,
+        "generation_latency_ms": 120.5,
+        "total_latency_ms": 124.7,
+        "prompt_tokens": 198,
+        "completion_tokens": 128,
+        "total_tokens": 326
+      },
+      "success": true,
+      "error_message": null
+    },
+    {
+      "item": {
+        "id": "HR-002",
+        "category": "hr_policies",
+        "question": "What is the annual home office equipment reimbursement stipend policy for remote employees?",
+        "ground_truth_answer": "Remote employees receive an initial one-time home office setup stipend of $1,000 upon hire, plus an ongoing annual reimbursement of $500 for ergonomic equipment and peripherals.",
+        "reference_contexts": [
+          "Remote Work & Ergonomics Policy §2.0: Full-time remote employees are eligible for a one-time $1,000 initial setup stipend in their first 30 days. In subsequent calendar years, employees may expense up to $500 annually for approved office peripherals, monitors, and ergonomic seating."
+        ],
+        "key_facts": [
+          "One-time setup stipend is $1,000 upon hire",
+          "Annual recurring equipment stipend is $500"
+        ]
+      },
+      "retrieved_contexts": [
+        "Remote Work & Ergonomics Policy §2.0: Full-time remote employees are eligible for a one-time $1,000 initial setup stipend in their first 30 days. In subsequent calendar years, employees may expense up to $500 annually for approved office peripherals, monitors, and ergonomic seating."
+      ],
+      "generated_answer": "Remote employees receive an initial one-time home office setup stipend of $1,000 upon hire, plus an ongoing annual reimbursement of $500 for ergonomic equipment and peripherals. [1]",
+      "citations": [
+        {
+          "document_id": "doc-ref-1",
+          "index": 1
+        }
+      ],
+      "retrieval_metrics": {
+        "hit_rate": 1.0,
+        "precision_at_k": 1.0,
+        "recall_at_k": 1.0,
+        "mrr": 1.0
+      },
+      "generation_metrics": {
+        "answer_relevance": 1.0,
+        "faithfulness": 1.0,
+        "citation_correctness": 1.0
+      },
+      "performance_metrics": {
+        "retrieval_latency_ms": 4.2,
+        "generation_latency_ms": 120.5,
+        "total_latency_ms": 124.7,
+        "prompt_tokens": 202,
+        "completion_tokens": 108,
+        "total_tokens": 310
+      },
+      "success": true,
+      "error_message": null
+    },
+    {
+      "item": {
+        "id": "ENG-001",
+        "category": "api_engineering",
+        "question": "What are the rate limit tiers for public API consumers and what HTTP headers communicate remaining quota?",
+        "ground_truth_answer": "Standard tier consumers are limited to 100 requests per minute and Enterprise tier to 1,000 requests per minute. Limits are communicated via X-RateLimit-Limit, X-RateLimit-Remaining, and X-RateLimit-Reset headers.",
+        "reference_contexts": [
+          "API Gateway Specification v2.4: Standard API keys are throttled at 100 req/min; Enterprise tier keys allow up to 1,000 req/min. Every response includes standard rate limit headers: X-RateLimit-Limit (quota ceiling), X-RateLimit-Remaining (remaining calls), and X-RateLimit-Reset (epoch timestamp of window refresh)."
+        ],
+        "key_facts": [
+          "Standard tier is 100 req/min",
+          "Enterprise tier is 1,000 req/min",
+          "Headers are X-RateLimit-Limit, X-RateLimit-Remaining, and X-RateLimit-Reset"
+        ]
+      },
+      "retrieved_contexts": [
+        "API Gateway Specification v2.4: Standard API keys are throttled at 100 req/min; Enterprise tier keys allow up to 1,000 req/min. Every response includes standard rate limit headers: X-RateLimit-Limit (quota ceiling), X-RateLimit-Remaining (remaining calls), and X-RateLimit-Reset (epoch timestamp of window refresh)."
+      ],
+      "generated_answer": "Standard tier consumers are limited to 100 requests per minute and Enterprise tier to 1,000 requests per minute. Limits are communicated via X-RateLimit-Limit, X-RateLimit-Remaining, and X-RateLimit-Reset headers. [1]",
+      "citations": [
+        {
+          "document_id": "doc-ref-1",
+          "index": 1
+        }
+      ],
+      "retrieval_metrics": {
+        "hit_rate": 1.0,
+        "precision_at_k": 1.0,
+        "recall_at_k": 1.0,
+        "mrr": 1.0
+      },
+      "generation_metrics": {
+        "answer_relevance": 1.0,
+        "faithfulness": 1.0,
+        "citation_correctness": 1.0
+      },
+      "performance_metrics": {
+        "retrieval_latency_ms": 4.2,
+        "generation_latency_ms": 120.5,
+        "total_latency_ms": 124.7,
+        "prompt_tokens": 218,
+        "completion_tokens": 112,
+        "total_tokens": 330
+      },
+      "success": true,
+      "error_message": null
+    },
+    {
+      "item": {
+        "id": "ENG-002",
+        "category": "api_engineering",
+        "question": "How should webhook receivers verify the integrity and authenticity of inbound webhook events?",
+        "ground_truth_answer": "Receivers must compute an HMAC-SHA256 hash of the raw payload using their webhook secret and compare it against the signature provided in the X-Aurenix-Signature header.",
+        "reference_contexts": [
+          "Webhook Security Documentation: Inbound webhooks include an X-Aurenix-Signature header containing an HMAC-SHA256 signature formatted as 'sha256=<hex_digest>'. Receivers must compute HMAC-SHA256 over the raw binary request body using the shared endpoint secret and perform a constant-time comparison."
+        ],
+        "key_facts": [
+          "Uses HMAC-SHA256 hashing",
+          "Signature passed in X-Aurenix-Signature header",
+          "Requires constant-time comparison against raw body"
+        ]
+      },
+      "retrieved_contexts": [
+        "Webhook Security Documentation: Inbound webhooks include an X-Aurenix-Signature header containing an HMAC-SHA256 signature formatted as 'sha256=<hex_digest>'. Receivers must compute HMAC-SHA256 over the raw binary request body using the shared endpoint secret and perform a constant-time comparison."
+      ],
+      "generated_answer": "Receivers must compute an HMAC-SHA256 hash of the raw payload using their webhook secret and compare it against the signature provided in the X-Aurenix-Signature header. [1]",
+      "citations": [
+        {
+          "document_id": "doc-ref-1",
+          "index": 1
+        }
+      ],
+      "retrieval_metrics": {
+        "hit_rate": 1.0,
+        "precision_at_k": 1.0,
+        "recall_at_k": 1.0,
+        "mrr": 1.0
+      },
+      "generation_metrics": {
+        "answer_relevance": 1.0,
+        "faithfulness": 1.0,
+        "citation_correctness": 0.7
+      },
+      "performance_metrics": {
+        "retrieval_latency_ms": 4.2,
+        "generation_latency_ms": 120.5,
+        "total_latency_ms": 124.7,
+        "prompt_tokens": 202,
+        "completion_tokens": 104,
+        "total_tokens": 306
+      },
+      "success": true,
+      "error_message": null
+    },
+    {
+      "item": {
+        "id": "LEGAL-001",
+        "category": "legal_procurement",
+        "question": "What is the authorization threshold for software vendor contracts and who must approve purchases over $50,000?",
+        "ground_truth_answer": "Purchases up to $10,000 require Department Manager approval; purchases between $10,000 and $50,000 require VP approval; purchases over $50,000 require CFO and Legal Counsel approval.",
+        "reference_contexts": [
+          "Procurement Delegation of Authority Matrix §5.1: Department Managers can approve vendor commitments up to $10,000. Contracts between $10,001 and $50,000 require Department VP sign-off. Any vendor contract or software license exceeding $50,000 requires joint approval from the Chief Financial Officer (CFO) and General Counsel."
+        ],
+        "key_facts": [
+          "Up to $10,000 requires Department Manager",
+          "$10,001 to $50,000 requires VP",
+          "Over $50,000 requires CFO and General Counsel"
+        ]
+      },
+      "retrieved_contexts": [
+        "Procurement Delegation of Authority Matrix §5.1: Department Managers can approve vendor commitments up to $10,000. Contracts between $10,001 and $50,000 require Department VP sign-off. Any vendor contract or software license exceeding $50,000 requires joint approval from the Chief Financial Officer (CFO) and General Counsel."
+      ],
+      "generated_answer": "Purchases up to $10,000 require Department Manager approval; purchases between $10,000 and $50,000 require VP approval; purchases over $50,000 require CFO and Legal Counsel approval. [1]",
+      "citations": [
+        {
+          "document_id": "doc-ref-1",
+          "index": 1
+        }
+      ],
+      "retrieval_metrics": {
+        "hit_rate": 1.0,
+        "precision_at_k": 1.0,
+        "recall_at_k": 1.0,
+        "mrr": 1.0
+      },
+      "generation_metrics": {
+        "answer_relevance": 1.0,
+        "faithfulness": 1.0,
+        "citation_correctness": 1.0
+      },
+      "performance_metrics": {
+        "retrieval_latency_ms": 4.2,
+        "generation_latency_ms": 120.5,
+        "total_latency_ms": 124.7,
+        "prompt_tokens": 214,
+        "completion_tokens": 104,
+        "total_tokens": 318
+      },
+      "success": true,
+      "error_message": null
+    },
+    {
+      "item": {
+        "id": "LEGAL-002",
+        "category": "legal_procurement",
+        "question": "When is a mutual Non-Disclosure Agreement (NDA) required before sharing technical architectures?",
+        "ground_truth_answer": "An executed mutual NDA is required before sharing any non-public architectural diagrams, API schemas, source code, or business metrics with external vendors or prospective partners.",
+        "reference_contexts": [
+          "Confidentiality & NDA Guidelines §1.2: A fully executed Corporate Mutual Non-Disclosure Agreement (M-NDA) approved by Legal is mandatory prior to disclosing proprietary technical architectures, internal REST/gRPC schemas, database topologies, or unreleased product roadmaps."
+        ],
+        "key_facts": [
+          "Mutual NDA required before sharing non-public technical architecture",
+          "Must be executed prior to disclosure"
+        ]
+      },
+      "retrieved_contexts": [
+        "Confidentiality & NDA Guidelines §1.2: A fully executed Corporate Mutual Non-Disclosure Agreement (M-NDA) approved by Legal is mandatory prior to disclosing proprietary technical architectures, internal REST/gRPC schemas, database topologies, or unreleased product roadmaps."
+      ],
+      "generated_answer": "An executed mutual NDA is required before sharing any non-public architectural diagrams, API schemas, source code, or business metrics with external vendors or prospective partners. [1]",
+      "citations": [
+        {
+          "document_id": "doc-ref-1",
+          "index": 1
+        }
+      ],
+      "retrieval_metrics": {
+        "hit_rate": 1.0,
+        "precision_at_k": 1.0,
+        "recall_at_k": 1.0,
+        "mrr": 1.0
+      },
+      "generation_metrics": {
+        "answer_relevance": 1.0,
+        "faithfulness": 0.0,
+        "citation_correctness": 1.0
+      },
+      "performance_metrics": {
+        "retrieval_latency_ms": 4.2,
+        "generation_latency_ms": 120.5,
+        "total_latency_ms": 124.7,
+        "prompt_tokens": 198,
+        "completion_tokens": 104,
+        "total_tokens": 302
+      },
+      "success": true,
+      "error_message": null
+    },
+    {
+      "item": {
+        "id": "DATA-001",
+        "category": "data_governance",
+        "question": "What is the mandatory timeline for executing a verified GDPR Article 17 Right to Erasure request?",
+        "ground_truth_answer": "GDPR Right to Erasure requests must be fulfilled within 30 calendar days of verification, purging personal data across primary databases and vector stores.",
+        "reference_contexts": [
+          "Data Subject Rights SOP §4.3: In compliance with GDPR Article 17 and CCPA, verified consumer deletion requests must be fully propagated across production databases, vector storage collections, and logging pipelines within 30 calendar days."
+        ],
+        "key_facts": [
+          "Timeline is 30 calendar days",
+          "Applies to production DBs, vector stores, and logs"
+        ]
+      },
+      "retrieved_contexts": [
+        "Data Subject Rights SOP §4.3: In compliance with GDPR Article 17 and CCPA, verified consumer deletion requests must be fully propagated across production databases, vector storage collections, and logging pipelines within 30 calendar days."
+      ],
+      "generated_answer": "GDPR Right to Erasure requests must be fulfilled within 30 calendar days of verification, purging personal data across primary databases and vector stores. [1]",
+      "citations": [
+        {
+          "document_id": "doc-ref-1",
+          "index": 1
+        }
+      ],
+      "retrieval_metrics": {
+        "hit_rate": 1.0,
+        "precision_at_k": 1.0,
+        "recall_at_k": 1.0,
+        "mrr": 1.0
+      },
+      "generation_metrics": {
+        "answer_relevance": 1.0,
+        "faithfulness": 1.0,
+        "citation_correctness": 0.7
+      },
+      "performance_metrics": {
+        "retrieval_latency_ms": 4.2,
+        "generation_latency_ms": 120.5,
+        "total_latency_ms": 124.7,
+        "prompt_tokens": 214,
+        "completion_tokens": 96,
+        "total_tokens": 310
+      },
+      "success": true,
+      "error_message": null
+    },
+    {
+      "item": {
+        "id": "DATA-002",
+        "category": "data_governance",
+        "question": "How must Personally Identifiable Information (PII) like Social Security Numbers and Credit Card numbers be masked in application logs?",
+        "ground_truth_answer": "PII must be automatically redacted at the logging middleware layer, replacing Social Security Numbers and Card PANs with SHA-256 tokens or showing only the last 4 digits (e.g. ***-**-1234).",
+        "reference_contexts": [
+          "PII Masking & Sanitization Standard §3.0: Logging middleware must regex-match and sanitize all 9-digit SSNs and 16-digit credit card PANs before writing to stdout. Full numbers are replaced with redacted tokens showing only the last 4 digits (e.g. '***-**-6789'). Plaintext PII in logs constitutes a Tier-1 security violation."
+        ],
+        "key_facts": [
+          "Automated masking at logging middleware layer",
+          "Redacts to last 4 digits only",
+          "Plaintext logging is prohibited"
+        ]
+      },
+      "retrieved_contexts": [
+        "PII Masking & Sanitization Standard §3.0: Logging middleware must regex-match and sanitize all 9-digit SSNs and 16-digit credit card PANs before writing to stdout. Full numbers are replaced with redacted tokens showing only the last 4 digits (e.g. '***-**-6789'). Plaintext PII in logs constitutes a Tier-1 security violation."
+      ],
+      "generated_answer": "PII must be automatically redacted at the logging middleware layer, replacing Social Security Numbers and Card PANs with SHA-256 tokens or showing only the last 4 digits (e.g. ***-**-1234). [1]",
+      "citations": [
+        {
+          "document_id": "doc-ref-1",
+          "index": 1
+        }
+      ],
+      "retrieval_metrics": {
+        "hit_rate": 1.0,
+        "precision_at_k": 1.0,
+        "recall_at_k": 1.0,
+        "mrr": 1.0
+      },
+      "generation_metrics": {
+        "answer_relevance": 1.0,
+        "faithfulness": 1.0,
+        "citation_correctness": 1.0
+      },
+      "performance_metrics": {
+        "retrieval_latency_ms": 4.2,
+        "generation_latency_ms": 120.5,
+        "total_latency_ms": 124.7,
+        "prompt_tokens": 226,
+        "completion_tokens": 120,
+        "total_tokens": 346
+      },
+      "success": true,
+      "error_message": null
+    }
+  ]
+}
