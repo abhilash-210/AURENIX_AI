@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.services.rag.schemas import Citation
 
@@ -41,11 +41,16 @@ class MessageResponse(MessageBase):
     id: uuid.UUID
     conversation_id: uuid.UUID
     role: str
-    citations: list[Citation] = Field(default_factory=list)
+    citations: list[Citation] | list[dict[str, Any]] | None = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+    @field_validator("citations", mode="before")
+    @classmethod
+    def set_citations(cls, v: Any) -> list[Any]:
+        return v if v is not None else []
 
 
 class PaginatedMessageResponse(BaseModel):
