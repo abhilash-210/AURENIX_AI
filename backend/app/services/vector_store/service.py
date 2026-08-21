@@ -11,8 +11,10 @@ from app.services.vector_store.qdrant import QdrantVectorStore
 
 
 class IndexingError(AurenixError):
+    error_code = "INDEXING_ERROR"
+
     def __init__(self, message: str) -> None:
-        super().__init__(message=message, error_code="INDEXING_ERROR")
+        super().__init__(message=message)
 
 
 class VectorStoreService:

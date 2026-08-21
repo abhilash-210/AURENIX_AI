@@ -146,3 +146,66 @@ def test_client():
     get_settings.cache_clear()
     app = create_app()
     return TestClient(app, raise_server_exceptions=False)
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Shared Auth and Workspace Fixtures
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+@pytest_asyncio.fixture
+async def async_client(client: AsyncClient) -> AsyncClient:
+    """Alias for client fixture for parity with async_client."""
+    return client
+
+
+@pytest_asyncio.fixture
+async def auth_user(db_session: AsyncSession):
+    """Create a persistent test user."""
+    import uuid
+    from app.models.user import User
+    from app.services.auth import hash_password
+
+    user = User(
+        id=uuid.uuid4(),
+        email=f"test-{uuid.uuid4().hex[:6]}@example.com",
+        hashed_password=hash_password("Password123!"),
+        full_name="Test Enterprise User",
+        is_active=True,
+    )
+    db_session.add(user)
+    await db_session.flush()
+    return user
+
+
+@pytest_asyncio.fixture
+async def auth_token(auth_user) -> str:
+    """Generate a valid JWT access token for auth_user."""
+    from app.services.auth import create_access_token
+    return create_access_token(subject=str(auth_user.id))
+
+
+@pytest_asyncio.fixture
+async def setup_workspaces(db_session: AsyncSession, auth_user):
+    """Create a test workspace and attach auth_user as owner."""
+    import uuid
+    from app.models.workspace import Workspace, WorkspaceMember
+
+    ws = Workspace(
+        id=uuid.uuid4(),
+        name="Test Workspace",
+        slug=f"test-{uuid.uuid4().hex[:8]}",
+        settings={"max_documents": 100, "max_messages": 1000},
+    )
+    db_session.add(ws)
+    await db_session.flush()
+
+    member = WorkspaceMember(
+        workspace_id=ws.id,
+        user_id=auth_user.id,
+        role="owner",
+    )
+    db_session.add(member)
+    await db_session.flush()
+    return ws, auth_user
+

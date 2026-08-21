@@ -103,6 +103,13 @@ class ForbiddenError(AurenixError):
     error_code = "FORBIDDEN"
 
 
+class PaymentRequiredError(AurenixError):
+    """Resource quota or workspace usage limit exceeded."""
+
+    status_code = HTTPStatus.PAYMENT_REQUIRED
+    error_code = "QUOTA_EXCEEDED"
+
+
 # ──────────────────────────────────────────────────────────────────────────────
 # 5xx — Server errors
 # ──────────────────────────────────────────────────────────────────────────────

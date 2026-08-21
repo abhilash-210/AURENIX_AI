@@ -11,13 +11,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.exceptions import NotFoundError
 from app.models.memory import Memory, MemoryScope
+from app.services.embeddings.service import EmbeddingService
 from app.services.llm.service import LLMService
 from app.services.llm.types import ChatMessage, CompletionOptions
 from app.services.memory.schemas import MemoryCreate, MemoryExtractionResult
-from app.services.rag.embeddings import BaseEmbeddingProvider, OpenAIEmbeddingProvider
-from app.services.vector_store.qdrant import QdrantVectorStore, VectorStoreService
+from app.services.vector_store.qdrant import QdrantVectorStore
 
 logger = logging.getLogger(__name__)
+
+
+class VectorStoreService:
+    @staticmethod
+    def get_instance() -> QdrantVectorStore:
+        return QdrantVectorStore()
 
 
 class MemoryService:
@@ -25,12 +31,15 @@ class MemoryService:
     Manages semantic memory extraction, CRUD, and retrieval.
     """
 
-    def __init__(self, db: AsyncSession) -> None:
+    def __init__(
+        self,
+        db: AsyncSession,
+        vector_store: QdrantVectorStore | None = None,
+    ) -> None:
         self.db = db
         self.llm = LLMService()
-        self.embedding_provider: BaseEmbeddingProvider = OpenAIEmbeddingProvider()
-        # Initialize the vector store singleton to ensure collections are ready
-        self.vector_store: QdrantVectorStore = VectorStoreService.get_instance()
+        self.embedding_service = EmbeddingService()
+        self.vector_store: QdrantVectorStore = vector_store or VectorStoreService.get_instance()
 
     async def get_memories(
         self,
@@ -113,7 +122,7 @@ class MemoryService:
                 await self.db.flush() # flush to get the UUID
                 
                 # Embed and save to Qdrant
-                vector = await self.embedding_provider.embed_query(fact)
+                vector = await self.embedding_service.embed_text(fact)
                 payload = {
                     "content": fact,
                     "workspace_id": str(workspace_id) if workspace_id else None,
@@ -143,7 +152,7 @@ class MemoryService:
         Embeds query and fetches relevant memories from Qdrant.
         """
         try:
-            vector = await self.embedding_provider.embed_query(query)
+            vector = await self.embedding_service.embed_text(query)
             
             # Fetch workspace scoped
             ws_results = []

@@ -119,6 +119,8 @@ dist/
 .env
 .env.*
 !.env.example
+!.env.production.example
+!.env*.example
 *.pem
 *.key
 *.cert
@@ -164,4 +166,7 @@ temp/
 *.tmp
 *.bak
 *.orig
+storage/uploads/*
+!storage/uploads/.gitkeep
+backend/storage/
 .build/
