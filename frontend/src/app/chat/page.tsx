@@ -19,7 +19,175 @@ import {
   CheckSquare,
   Square,
   AlertTriangle,
+  FileText,
+  BookOpen,
 } from "lucide-react"
+
+// ── Markdown Parser to React ────────────────────────────────────────────────
+function processInlineStyles(text: string): React.ReactNode[] {
+  const parts = text.split(/(\*\*.*?\*\*|`.*?`)/g)
+  return parts.map((part, idx) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={idx} className="font-extrabold text-foreground">{part.slice(2, -2)}</strong>
+    }
+    if (part.startsWith("`") && part.endsWith("`")) {
+      return <code key={idx} className="px-1.5 py-0.5 bg-muted rounded font-mono text-[11px] text-rose-500 border">{part.slice(1, -1)}</code>
+    }
+    return part
+  })
+}
+
+function parseMarkdownToReact(text: string) {
+  if (!text) return null
+  const lines = text.split("\n")
+  let inCodeBlock = false
+  let codeBlockContent: string[] = []
+  let codeBlockLang = ""
+  let inTable = false
+  let tableRows: string[][] = []
+
+  const elements: React.ReactNode[] = []
+
+  lines.forEach((line, index) => {
+    const trimmed = line.trim()
+
+    // Code Blocks
+    if (trimmed.startsWith("```")) {
+      if (inCodeBlock) {
+        inCodeBlock = false
+        elements.push(
+          <pre key={`code-${index}`} className="my-2.5 p-3 bg-muted/60 dark:bg-muted/30 rounded-xl text-xs font-mono overflow-x-auto border border-border/80">
+            <code className={codeBlockLang ? `language-${codeBlockLang}` : ""}>
+              {codeBlockContent.join("\n")}
+            </code>
+          </pre>
+        )
+        codeBlockContent = []
+        codeBlockLang = ""
+      } else {
+        inCodeBlock = true
+        codeBlockLang = trimmed.slice(3).trim()
+      }
+      return
+    }
+
+    if (inCodeBlock) {
+      codeBlockContent.push(line)
+      return;
+    }
+
+    // Tables
+    if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
+      if (trimmed.includes("---")) {
+        // Skip separator line
+        return
+      }
+      const cols = trimmed.split("|").slice(1, -1).map((c: string) => c.trim())
+      tableRows.push(cols)
+      inTable = true
+      return
+    } else if (inTable) {
+      // Close table
+      inTable = false
+      elements.push(
+        <div key={`table-${index}`} className="my-3 overflow-x-auto rounded-xl border">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="bg-muted border-b">
+                {tableRows[0].map((h, i) => (
+                  <th key={i} className="p-2.5 font-bold text-foreground">{processInlineStyles(h)}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {tableRows.slice(1).map((row, ri) => (
+                <tr key={ri} className="hover:bg-muted/30 transition-colors">
+                  {row.map((val, vi) => (
+                    <td key={vi} className="p-2.5 text-muted-foreground">{processInlineStyles(val)}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )
+      tableRows = []
+    }
+
+    // Headers
+    if (trimmed.startsWith("#### ")) {
+      elements.push(<h5 key={index} className="text-xs font-bold mt-4 mb-1 text-primary tracking-wide uppercase">{processInlineStyles(trimmed.slice(5))}</h5>)
+      return
+    }
+    if (trimmed.startsWith("### ")) {
+      elements.push(<h4 key={index} className="text-sm font-bold mt-4 mb-2 text-primary border-b pb-1.5">{processInlineStyles(trimmed.slice(4))}</h4>)
+      return
+    }
+    if (trimmed.startsWith("## ")) {
+      elements.push(<h3 key={index} className="text-base font-extrabold mt-5 mb-2.5 text-foreground">{processInlineStyles(trimmed.slice(3))}</h3>)
+      return
+    }
+    if (trimmed.startsWith("# ")) {
+      elements.push(<h2 key={index} className="text-lg font-black mt-6 mb-3 text-foreground">{processInlineStyles(trimmed.slice(2))}</h2>)
+      return
+    }
+
+    // Bullet Lists
+    if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
+      elements.push(
+        <li key={index} className="ml-5 list-disc text-sm my-1 leading-relaxed text-muted-foreground">
+          {processInlineStyles(trimmed.slice(2))}
+        </li>
+      )
+      return
+    }
+
+    // Numbered Lists
+    const numMatch = trimmed.match(/^(\d+)\.\s(.*)/)
+    if (numMatch) {
+      elements.push(
+        <li key={index} className="ml-5 list-decimal text-sm my-1 leading-relaxed text-muted-foreground">
+          {processInlineStyles(numMatch[2])}
+        </li>
+      )
+      return
+    }
+
+    // Paragraph
+    if (trimmed) {
+      elements.push(<p key={index} className="text-sm leading-relaxed my-2 text-foreground/90">{processInlineStyles(line)}</p>)
+    }
+  })
+
+  // Edge case: table open at end of text
+  if (inTable && tableRows.length > 0) {
+    elements.push(
+      <div key="table-end" className="my-3 overflow-x-auto rounded-xl border">
+        <table className="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr className="bg-muted border-b">
+              {tableRows[0].map((h, i) => (
+                <th key={i} className="p-2.5 font-bold text-foreground">{processInlineStyles(h)}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y">
+            {tableRows.slice(1).map((row, ri) => (
+              <tr key={ri} className="hover:bg-muted/30 transition-colors">
+                {row.map((val, vi) => (
+                  <td key={vi} className="p-2.5 text-muted-foreground">{processInlineStyles(val)}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )
+  }
+
+  return elements
+}
+
 
 type Conversation = {
   id: string
@@ -473,21 +641,30 @@ export default function ChatPage() {
                   className={`flex flex-col max-w-[85%] ${msg.role === "user" ? "ml-auto items-end" : "mr-auto items-start"}`}
                 >
                   <div
-                    className={`px-4 py-3 rounded-2xl ${
+                    className={`px-5 py-4 rounded-2xl shadow-sm border ${
                       msg.role === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-foreground"
+                        ? "bg-primary text-primary-foreground border-primary/20"
+                        : "bg-card text-foreground border-border/60"
                     }`}
                   >
-                    <p className="whitespace-pre-wrap leading-relaxed text-sm">
-                      {msg.content || (isStreaming && i === messages.length - 1 ? "▋" : "")}
-                    </p>
+                    {msg.role === "user" ? (
+                      <p className="whitespace-pre-wrap leading-relaxed text-sm">
+                        {msg.content}
+                      </p>
+                    ) : (
+                      <div className="space-y-1">
+                        {parseMarkdownToReact(msg.content + (isStreaming && i === messages.length - 1 ? " ▋" : ""))}
+                      </div>
+                    )}
 
-                    {/* Citations */}
+                    {/* Redesigned Citations Section */}
                     {msg.citations && msg.citations.length > 0 && (
-                      <div className="mt-4 pt-3 border-t border-border/50">
-                        <p className="text-xs font-semibold mb-2 opacity-70">Sources</p>
-                        <div className="flex flex-wrap gap-2">
+                      <div className="mt-4 pt-3.5 border-t border-border/80">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-primary mb-2.5 uppercase tracking-wider">
+                          <BookOpen className="h-3.5 w-3.5" />
+                          <span>Sources & Citations</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2.5">
                           {msg.citations.map((cite, idx) => {
                             const name = cite.source?.source_filename || cite.filename || "Document"
                             const page = cite.source?.page_number || cite.page_number || 1
@@ -495,10 +672,15 @@ export default function ChatPage() {
                             return (
                               <div
                                 key={idx}
-                                className="bg-background/80 border rounded-lg px-2.5 py-1.5 flex flex-col text-xs max-w-[220px] shadow-sm"
+                                className="flex items-center gap-2.5 bg-muted/40 hover:bg-muted/80 border border-border/60 rounded-xl px-3 py-2 text-xs transition-all duration-200 shadow-2xs group max-w-[260px] min-w-0"
                               >
-                                <span className="font-semibold truncate text-primary" title={name}>{marker} {name}</span>
-                                <span className="text-muted-foreground text-[10px]">Page {page}</span>
+                                <FileText className="h-3.5 w-3.5 text-primary shrink-0 group-hover:scale-110 transition-transform" />
+                                <div className="flex flex-col min-w-0 flex-1">
+                                  <span className="font-semibold text-foreground truncate" title={name}>
+                                    {marker} {name}
+                                  </span>
+                                  <span className="text-[10px] text-muted-foreground font-medium mt-0.5">Page {page}</span>
+                                </div>
                               </div>
                             )
                           })}
