@@ -121,3 +121,10 @@ class VectorStoreService:
             }
             for res in results
         ]
+
+    async def delete_workspace_vectors(self, workspace_id: str) -> None:
+        """Remove ALL vectors associated with a workspace (used during workspace deletion)."""
+        try:
+            await self.vector_store.delete_workspace_vectors(workspace_id)
+        except Exception:
+            pass  # Best-effort; Qdrant may be offline in dev

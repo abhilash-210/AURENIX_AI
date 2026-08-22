@@ -87,6 +87,10 @@ export const auth = {
 
 export const workspaces = {
   list: () => api.get('/workspaces'),
+  create: (data: { name: string; description?: string }) => api.post('/workspaces', data),
+  get: (workspaceId: string) => api.get(`/workspaces/${workspaceId}`),
+  rename: (workspaceId: string, data: { name?: string; description?: string }) => api.patch(`/workspaces/${workspaceId}`, data),
+  delete: (workspaceId: string) => api.delete(`/workspaces/${workspaceId}`),
   getMembers: (workspaceId: string) => api.get(`/workspaces/${workspaceId}/members`),
   updateMemberRole: (workspaceId: string, userId: string, role: string) => api.patch(`/workspaces/${workspaceId}/members/${userId}`, { role }),
   removeMember: (workspaceId: string, userId: string) => api.delete(`/workspaces/${workspaceId}/members/${userId}`),
@@ -106,6 +110,8 @@ export const conversations = {
   list: (workspaceId: string) => api.get(`/workspaces/${workspaceId}/conversations`),
   get: (conversationId: string) => api.get(`/conversations/${conversationId}`),
   create: (workspaceId: string, data: any) => api.post(`/workspaces/${workspaceId}/conversations`, data),
+  rename: (conversationId: string, title: string) => api.patch(`/conversations/${conversationId}`, { title }),
+  delete: (conversationId: string) => api.delete(`/conversations/${conversationId}`),
   getMessages: (conversationId: string) => api.get(`/conversations/${conversationId}/messages`),
   sendMessage: (conversationId: string, data: any) => api.post(`/conversations/${conversationId}/messages`, data, { headers: { 'Accept': 'text/event-stream' } }),
 };

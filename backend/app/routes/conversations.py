@@ -7,9 +7,11 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, Query, Request, status
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.exceptions import ForbiddenError, NotFoundError
 from app.models.user import User
 from app.routes.auth import get_current_user
 from app.schemas.conversation import (
@@ -23,6 +25,10 @@ from app.schemas.conversation import (
 from app.services.chat.service import ChatService
 
 router = APIRouter(tags=["Conversations"])
+
+
+class ConversationRename(BaseModel):
+    title: str = Field(..., min_length=1, max_length=255, description="New conversation title")
 
 
 @router.post(
@@ -45,7 +51,7 @@ async def create_conversation(
     "/workspaces/{workspace_id}/conversations",
     status_code=status.HTTP_200_OK,
     response_model=PaginatedConversationResponse,
-    summary="List conversations",
+    summary="List conversations in a workspace",
 )
 async def list_conversations(
     workspace_id: uuid.UUID,
@@ -56,7 +62,7 @@ async def list_conversations(
 ) -> dict[str, Any]:
     service = ChatService(db)
     items, total = await service.get_conversations(workspace_id, current_user.id, page, size)
-    
+
     return {
         "items": items,
         "total": total,
@@ -64,6 +70,37 @@ async def list_conversations(
         "size": size,
         "has_more": (page * size) < total,
     }
+
+
+@router.get(
+    "/conversations/{conversation_id}",
+    status_code=status.HTTP_200_OK,
+    response_model=ConversationResponse,
+    summary="Get a single conversation",
+)
+async def get_conversation(
+    conversation_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ConversationResponse:
+    service = ChatService(db)
+    return await service.get_conversation(conversation_id, current_user.id)
+
+
+@router.patch(
+    "/conversations/{conversation_id}",
+    status_code=status.HTTP_200_OK,
+    response_model=ConversationResponse,
+    summary="Rename a conversation",
+)
+async def rename_conversation(
+    conversation_id: uuid.UUID,
+    payload: ConversationRename,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ConversationResponse:
+    service = ChatService(db)
+    return await service.rename_conversation(conversation_id, current_user.id, payload.title)
 
 
 @router.get(
@@ -81,7 +118,7 @@ async def list_messages(
 ) -> dict[str, Any]:
     service = ChatService(db)
     items, total = await service.get_messages(conversation_id, current_user.id, page, size)
-    
+
     return {
         "items": items,
         "total": total,
@@ -120,7 +157,7 @@ async def send_message(
 @router.delete(
     "/conversations/{conversation_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete a conversation",
+    summary="Delete a conversation and all its messages",
 )
 async def delete_conversation(
     conversation_id: uuid.UUID,

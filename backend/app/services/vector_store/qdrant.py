@@ -273,3 +273,48 @@ class QdrantVectorStore(BaseVectorStore):
             )
         except Exception as exc:
             raise QdrantError(f"Failed to delete memory vector: {exc}") from exc
+
+    async def delete_workspace_vectors(self, workspace_id: str) -> None:
+        """Delete ALL document and memory vectors for an entire workspace."""
+        ws_filter = models.Filter(
+            must=[
+                models.FieldCondition(
+                    key="workspace_id",
+                    match=models.MatchValue(value=workspace_id),
+                )
+            ]
+        )
+        try:
+            await self.client.delete(
+                collection_name=self.collection_name,
+                points_selector=models.FilterSelector(filter=ws_filter),
+            )
+            await self.client.delete(
+                collection_name=self.memory_collection_name,
+                points_selector=models.FilterSelector(filter=ws_filter),
+            )
+            logger.info(f"Deleted all vectors for workspace: {workspace_id}")
+        except Exception as exc:
+            if not self.settings.is_production:
+                logger.warning(f"Qdrant workspace vector delete failed (dev mode): {exc}")
+                return
+            raise QdrantError(f"Failed to delete workspace vectors: {exc}") from exc
+
+    async def delete_document_vectors(self, workspace_id: str, document_id: str) -> None:
+        """Delete all vectors for a specific document."""
+        doc_filter = models.Filter(
+            must=[
+                models.FieldCondition(key="workspace_id", match=models.MatchValue(value=workspace_id)),
+                models.FieldCondition(key="document_id", match=models.MatchValue(value=document_id)),
+            ]
+        )
+        try:
+            await self.client.delete(
+                collection_name=self.collection_name,
+                points_selector=models.FilterSelector(filter=doc_filter),
+            )
+        except Exception as exc:
+            if not self.settings.is_production:
+                logger.warning(f"Qdrant document vector delete failed (dev mode): {exc}")
+                return
+            raise QdrantError(f"Failed to delete document vectors: {exc}") from exc

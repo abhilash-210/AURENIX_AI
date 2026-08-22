@@ -88,8 +88,19 @@ class ChatService:
 
     async def delete_conversation(self, conversation_id: uuid.UUID, user_id: uuid.UUID) -> None:
         conversation = await self.get_conversation(conversation_id, user_id)
+        # Explicitly delete messages first to ensure clean cascade
+        from sqlalchemy import delete as sql_delete
+        from app.models.chat import Message
+        await self.db.execute(sql_delete(Message).where(Message.conversation_id == conversation_id))
         await self.db.delete(conversation)
         await self.db.commit()
+
+    async def rename_conversation(self, conversation_id: uuid.UUID, user_id: uuid.UUID, new_title: str) -> "Conversation":
+        conversation = await self.get_conversation(conversation_id, user_id)
+        conversation.title = new_title
+        await self.db.commit()
+        await self.db.refresh(conversation)
+        return conversation
 
     async def get_messages(self, conversation_id: uuid.UUID, user_id: uuid.UUID, page: int = 1, size: int = 50) -> tuple[list[Message], int]:
         # Enforce access
