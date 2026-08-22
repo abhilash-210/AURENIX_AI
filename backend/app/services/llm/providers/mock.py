@@ -1,5 +1,9 @@
 """
 Mock LLM Provider for local development and unit tests.
+
+Implements a context-aware response synthesizer that reads the RAG context
+injected by the system prompt and produces properly structured answers
+for any document (resumes, SQL files, reports, CSV files, etc.).
 """
 
 from __future__ import annotations
@@ -7,6 +11,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import re
 from typing import AsyncGenerator, TypeVar
 from pydantic import BaseModel
 
@@ -21,16 +26,203 @@ from app.services.llm.types import (
 )
 
 T = TypeVar("T", bound=BaseModel)
-
 logger = logging.getLogger(__name__)
+
+
+def _extract_context(system_msg: str) -> str:
+    """Pull out the document context section from the system prompt."""
+    if "Context:" not in system_msg:
+        return ""
+    ctx = system_msg.split("Context:\n", 1)[-1]
+    if "Relevant Past Memories:" in ctx:
+        ctx = ctx.split("Relevant Past Memories:")[0]
+    return ctx.strip()
+
+
+def _extract_doc_text(context: str) -> str:
+    """Return all raw text from all document chunks, deduped."""
+    lines = []
+    for line in context.splitlines():
+        line = line.strip()
+        # Skip the Document [N] header lines, keep text content
+        if re.match(r"^Document \[\d+\]", line):
+            continue
+        if line.startswith("Source:") or line.startswith("[Source:"):
+            continue
+        if line:
+            lines.append(line)
+    return " ".join(lines)
+
+
+def _build_answer(question: str, context: str) -> str:
+    """
+    Context-aware answer builder.
+
+    Strategy:
+    1. Extract all text from RAG context.
+    2. Try to find sentences/paragraphs relevant to the question using keyword overlap.
+    3. Format a clean, structured answer citing [1].
+    4. Never return raw garbage — always wrap in a natural sentence.
+    """
+    if not context.strip():
+        return "I couldn't find any relevant information in the uploaded documents to answer your question."
+
+    q_lower = question.lower().strip()
+    doc_text = _extract_doc_text(context)
+
+    # Split context into chunks for targeted search
+    # Each chunk is separated by Document [N] headers
+    doc_chunks: list[tuple[int, str]] = []
+    current_idx = 1
+    current_lines: list[str] = []
+    for line in context.splitlines():
+        m = re.match(r"^Document \[(\d+)\]", line.strip())
+        if m:
+            if current_lines:
+                doc_chunks.append((current_idx, " ".join(current_lines)))
+            current_idx = int(m.group(1))
+            current_lines = []
+        else:
+            stripped = line.strip()
+            if stripped and not stripped.startswith("Source:") and not stripped.startswith("[Source:"):
+                current_lines.append(stripped)
+    if current_lines:
+        doc_chunks.append((current_idx, " ".join(current_lines)))
+
+    # If no chunks parsed, treat the whole context as chunk 1
+    if not doc_chunks:
+        doc_chunks = [(1, doc_text)]
+
+    def find_relevant_sentences(text: str, keywords: list[str], n: int = 5) -> list[str]:
+        """Find sentences in text that contain any of the keywords."""
+        sentences = re.split(r"(?<=[.!?])\s+", text)
+        scored = []
+        for s in sentences:
+            s_lower = s.lower()
+            score = sum(1 for k in keywords if k in s_lower)
+            if score > 0:
+                scored.append((score, s.strip()))
+        scored.sort(key=lambda x: -x[0])
+        return [s for _, s in scored[:n] if len(s) > 10]
+
+    def best_passage(keywords: list[str], char_limit: int = 600) -> str:
+        """Get the best text passage matching keywords across all chunks."""
+        relevant: list[str] = []
+        for _, chunk_text in doc_chunks:
+            relevant.extend(find_relevant_sentences(chunk_text, keywords))
+        if relevant:
+            combined = " ".join(relevant)
+            return combined[:char_limit]
+        # Fallback: first meaningful chunk text
+        if doc_chunks:
+            return doc_chunks[0][1][:char_limit]
+        return doc_text[:char_limit]
+
+    # ── Intent routing ──────────────────────────────────────────────────────
+
+    # Objective / purpose / goal / aim
+    if any(k in q_lower for k in ["objective", "purpose", "goal", "aim", "intent", "mission", "vision"]):
+        passage = best_passage(["objective", "purpose", "goal", "aim", "career", "to build", "to develop",
+                                 "to create", "mission", "vision", "summary"])
+        if passage:
+            return f"Based on the provided document [1], here is the **objective/purpose**:\n\n{passage}"
+        return "The document does not contain an explicit objective section. It may be a technical or data document."
+
+    # Summary / overview / what is it about
+    if any(k in q_lower for k in ["summary", "summarize", "overview", "about", "what is", "describe", "tell me about", "explain"]):
+        # Use the first 500 chars of each doc chunk for a summary
+        parts = []
+        for idx, chunk_text in doc_chunks[:3]:
+            preview = chunk_text[:300].strip()
+            if preview:
+                parts.append(f"**Document [{idx}]**: {preview}")
+        if parts:
+            return f"Based on the uploaded document [1], here is a summary:\n\n" + "\n\n".join(parts)
+        return "The document appears to be empty or could not be parsed."
+
+    # Name / person / who
+    if any(k in q_lower for k in ["name", "who", "person", "candidate", "author", "written by", "belongs to"]):
+        passage = best_passage(["name", "mr", "ms", "dr", "prof", "candidate", "author", "applicant", "student"])
+        if passage:
+            return f"Based on Document [1], here is the relevant information:\n\n{passage}"
+
+    # Skills / technologies / stack / tools
+    if any(k in q_lower for k in ["skill", "tech", "stack", "tool", "language", "framework", "software", "technology", "expertise"]):
+        passage = best_passage(["skill", "python", "java", "javascript", "react", "node", "sql", "framework",
+                                 "tool", "language", "technology", "expert", "proficient", "experience with"])
+        if passage:
+            return f"Based on Document [1], here are the relevant skills/technologies mentioned:\n\n{passage}"
+
+    # Education / degree / college / university / cgpa / gpa
+    if any(k in q_lower for k in ["education", "degree", "college", "university", "school", "cgpa", "gpa", "grade", "marks", "qualification"]):
+        passage = best_passage(["university", "college", "degree", "bachelor", "master", "cgpa", "gpa",
+                                 "b.tech", "b.e", "mba", "phd", "score", "grade", "marks"])
+        if passage:
+            return f"Based on Document [1], education details:\n\n{passage}"
+
+    # Experience / work / job / company / role
+    if any(k in q_lower for k in ["experience", "work", "job", "company", "employer", "role", "position", "employment", "career"]):
+        passage = best_passage(["experience", "worked", "company", "employer", "role", "position",
+                                 "years", "month", "developer", "engineer", "analyst", "intern"])
+        if passage:
+            return f"Based on Document [1], work experience details:\n\n{passage}"
+
+    # Projects / built / developed
+    if any(k in q_lower for k in ["project", "built", "developed", "created", "portfolio", "application", "app", "system"]):
+        passage = best_passage(["project", "built", "developed", "system", "application", "app",
+                                 "platform", "tool", "implemented", "created"])
+        if passage:
+            return f"Based on Document [1], project details found:\n\n{passage}"
+
+    # Certifications / courses / internship
+    if any(k in q_lower for k in ["certification", "certificate", "course", "internship", "training", "intern"]):
+        passage = best_passage(["certified", "certificate", "course", "internship", "training",
+                                 "nptel", "coursera", "udemy", "edx", "intern"])
+        if passage:
+            return f"Based on Document [1], certifications/internships:\n\n{passage}"
+
+    # Contact / email / phone / address / location
+    if any(k in q_lower for k in ["contact", "email", "phone", "address", "location", "city", "linkedin", "github"]):
+        passage = best_passage(["email", "phone", "mobile", "address", "city", "linkedin",
+                                 "github", "contact", "location", "hyderabad", "bangalore", "india"])
+        if passage:
+            return f"Based on Document [1], contact information:\n\n{passage}"
+
+    # SQL / database / query / table / schema
+    if any(k in q_lower for k in ["sql", "query", "table", "schema", "database", "select", "insert", "column", "row"]):
+        passage = best_passage(["sql", "select", "from", "where", "table", "column", "database",
+                                 "insert", "update", "delete", "join", "query", "schema"])
+        if passage:
+            return f"Based on Document [1], here is the relevant database/SQL content:\n\n```sql\n{passage}\n```"
+
+    # ── Generic fallback: find most relevant sentences ──────────────────────
+    question_words = [w for w in re.findall(r"\w+", q_lower) if len(w) > 3
+                      and w not in {"what", "which", "where", "when", "give", "tell", "show", "find",
+                                    "does", "have", "this", "that", "with", "from", "about", "document"}]
+
+    if question_words:
+        passage = best_passage(question_words, char_limit=500)
+        if passage and len(passage) > 20:
+            return f"Based on Document [1], here is the most relevant information for your question:\n\n{passage}"
+
+    # Last resort: first 400 chars of context
+    first_text = doc_text[:400].strip()
+    if first_text:
+        return (
+            f"Based on the provided document [1], here is what I found:\n\n{first_text}\n\n"
+            f"_If this doesn't answer your question, please try rephrasing with more specific keywords._"
+        )
+
+    return "I cannot find relevant information in the uploaded documents to answer this question."
 
 
 class MockLLMProvider(BaseLLMProvider):
     """
-    In-memory mock LLM provider.
+    In-memory context-aware mock LLM provider.
 
-    Does not make real external HTTP requests. Used for testing, offline dev,
-    and fast local verification.
+    Reads the RAG context injected into the system prompt and synthesizes
+    proper answers for any document type — resumes, SQL files, reports, CSVs.
+    Does not make real external HTTP requests.
     """
 
     def __init__(self, default_response: str = "Mock assistant response.") -> None:
@@ -50,34 +242,14 @@ class MockLLMProvider(BaseLLMProvider):
         last_user_msg = next((m.content for m in reversed(messages) if m.role == "user"), "")
 
         if "Context:" in system_msg:
-            # Extract document text from context
-            ctx_text = system_msg.split("Context:\n")[-1].split("Relevant Past Memories:")[0].strip()
-            q_lower = last_user_msg.lower()
-            if "softskill" in q_lower or "soft skill" in q_lower or ("soft" in q_lower and "skill" in q_lower):
-                content = "Based on Document [1], the candidate's soft skills include:\n- **Problem Solving**\n- **Team Collaboration**\n- **Communication**\n- **Quick Learner**\n- **Adaptability**\n- **Leadership**"
-            elif "project" in q_lower:
-                content = (
-                    "Based on Document [1], here are key projects from the resume:\n\n"
-                    "1. **E-Display (Smart Digital Classroom Communication System)**: Built using React.js, MQTT, and Raspberry Pi to broadcast live timetables, faculty updates, and instant notifications.\n"
-                    "2. **Cyber Sentry (Phishing Link Detector)**: Full-stack cybersecurity tool with Python, Flask, React.js, and Domain Intelligence APIs to detect phishing and malicious links.\n"
-                    "3. **Kisan Seva**: Full-stack B2B marketplace connecting farmers and street vendors.\n"
-                    "4. **Student Attendance Tracker**: Automated department attendance system built with Flask and SQLite/MySQL."
-                )
-            elif any(k in q_lower for k in ["candidate name", "his name", "what is the name", "who is the candidate", "person's name", "name of the", "name in the resume", "candidate's name"]) or q_lower.strip() == "name":
-                content = "Based on Document [1], the candidate's name is **Abhilash Gollapally** (Software Developer / Computer Science Undergraduate)."
-            elif "skill" in q_lower or "tech" in q_lower or "stack" in q_lower:
-                content = "Based on Document [1], the candidate's core technical skills include:\n- **Programming Languages**: Java, Python, JavaScript, C, SQL\n- **Frontend**: React.js, HTML5, CSS3, Bootstrap\n- **Backend**: Flask, REST APIs, SQLAlchemy, MQTT\n- **Databases**: MySQL, SQLite, Supabase\n- **Tools & Platforms**: Git, GitHub, Render, Raspberry Pi"
-            elif "certificate" in q_lower or "certification" in q_lower or "intern" in q_lower:
-                content = "Based on Document [1], certifications and internships include:\n- **Programming in Java** (NPTEL)\n- **AI/ML Virtual Internship** (EduSkills)\n- **Network Fundamentals** (Cisco)\n- **Python Full Stack Virtual Internship** (EduSkills)\n- **Junior Penetration Tester** (Cybrary)\n- **School of Computing Intern** (Sphoorthy Engineering College)"
-            elif "education" in q_lower or "college" in q_lower or "cgpa" in q_lower:
-                content = "Based on Document [1], education details:\n- **B.Tech CSE (Cyber Security)**: 2023–2027 | **CGPA: 8.89 / 10**\n- **Intermediate (MPC)**: Bhavan's Sri Aurobindo Junior College (2021–2023) | **92.4%**\n- **SSC**: Medha Vidhya Mandir High School (2021) | **CGPA: 10 / 10**"
-            elif any(k in q_lower for k in ["summary", "who", "about", "person", "resume", "experience", "profile"]):
-                content = "According to the uploaded resume [1], **Abhilash Gollapally** is a final-year Computer Science (Cyber Security) undergraduate (CGPA: 8.89 / 10) in Hyderabad, India. He has built 6 full-stack applications using Java, Python, React.js, and Flask, with certifications from NPTEL (Java), Cisco (Network Fundamentals), and EduSkills (AI/ML & Python Full Stack)."
-            else:
-                first_chunk = ctx_text.split("Document [2]")[0] if "Document [2]" in ctx_text else ctx_text[:400]
-                content = f"Based on the provided document [1]:\n\n{first_chunk.strip()}"
+            context = _extract_context(system_msg)
+            content = _build_answer(last_user_msg, context)
         else:
-            content = f"{self._default_response} [Echo: {last_user_msg}]" if last_user_msg else self._default_response
+            content = (
+                f"{self._default_response} (Echo: {last_user_msg})"
+                if last_user_msg
+                else self._default_response
+            )
 
         prompt_len = sum(len(m.content.split()) for m in messages)
         completion_len = len(content.split())
@@ -103,9 +275,8 @@ class MockLLMProvider(BaseLLMProvider):
     ) -> StructuredCompletionResponse[T]:
         model_name = options.model or "mock-model-v1"
 
-        # Attempt to construct a dummy default instance of response_schema
         schema_fields = response_schema.model_fields
-        dummy_data: dict[str, str | int | list[str] | dict[str, str]] = {}
+        dummy_data: dict = {}
         for field_name, field_info in schema_fields.items():
             annotation = field_info.annotation
             if annotation is str or (isinstance(annotation, type) and issubclass(annotation, str)):
@@ -141,7 +312,7 @@ class MockLLMProvider(BaseLLMProvider):
         tokens = full_text.content.split(" ")
 
         for i, token in enumerate(tokens):
-            await asyncio.sleep(0.01)
+            await asyncio.sleep(0.008)
             delta = token if i == 0 else f" {token}"
             finish_reason = "stop" if i == len(tokens) - 1 else None
             yield ChatCompletionChunk(delta=delta, finish_reason=finish_reason)

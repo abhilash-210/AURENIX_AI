@@ -260,10 +260,10 @@ class ChatService:
                 ]
                 
                 # Use a fresh DB session for the background task to avoid closed transaction issues
-                from app.database import async_session_maker
+                from app.database import AsyncSessionLocal
                 
                 async def extract_task():
-                    async with async_session_maker() as bg_db:
+                    async with AsyncSessionLocal() as bg_db:
                         bg_memory_service = MemoryService(bg_db)
                         await bg_memory_service.extract_and_save_memories(
                             messages_exchange=extraction_exchange,
