@@ -11,8 +11,10 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.dependencies import require_workspace_role
 from app.exceptions import ForbiddenError, NotFoundError
 from app.models.user import User
+from app.models.workspace import WorkspaceMember
 from app.routes.auth import get_current_user
 from app.schemas.conversation import (
     ConversationCreate,
@@ -41,6 +43,7 @@ async def create_conversation(
     workspace_id: uuid.UUID,
     payload: ConversationCreate,
     current_user: User = Depends(get_current_user),
+    _member: WorkspaceMember = Depends(require_workspace_role(["owner", "admin", "member"])),
     db: AsyncSession = Depends(get_db),
 ) -> ConversationResponse:
     service = ChatService(db)
@@ -58,6 +61,7 @@ async def list_conversations(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
+    _member: WorkspaceMember = Depends(require_workspace_role(["owner", "admin", "member"])),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     service = ChatService(db)

@@ -1,8 +1,11 @@
+"use client"
+
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { WorkspaceSwitcher } from "./workspace-switcher"
 import {
   MessageSquare,
   LayoutDashboard,
@@ -24,7 +27,17 @@ export function Sidebar() {
 
   return (
     <div className="flex h-full w-64 flex-col border-r bg-card px-3 py-4">
-      <div className="mb-6 px-3 text-lg font-bold tracking-tight">Aurenix AI</div>
+      {/* Logo */}
+      <div className="mb-4 px-3 text-lg font-bold tracking-tight">Aurenix AI</div>
+
+      {/* Workspace Switcher */}
+      <div className="mb-4 px-1">
+        <WorkspaceSwitcher />
+      </div>
+
+      <div className="border-b mb-3" />
+
+      {/* Navigation */}
       <nav className="flex flex-1 flex-col space-y-1">
         {sidebarItems.map((item) => {
           const isActive = pathname?.startsWith(item.href)
@@ -41,6 +54,8 @@ export function Sidebar() {
           )
         })}
       </nav>
+
+      {/* Enterprise badge */}
       <div className="mt-auto px-3 pb-4">
         <div className="rounded-md bg-muted p-4">
           <p className="text-sm font-medium">Enterprise Plan</p>
