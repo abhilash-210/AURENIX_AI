@@ -59,16 +59,49 @@ class Retriever:
 
                 ws_uuid = uuid.UUID(str(workspace_id))
                 async with AsyncSessionLocal() as session:
-                    # Fetch more rows than top_k so we can score and rank
-                    stmt = (
-                        select(DocumentChunk, Document)
-                        .join(Document, Document.id == DocumentChunk.document_id)
-                        .where(Document.workspace_id == ws_uuid)
-                        .order_by(DocumentChunk.chunk_index.asc())
-                        .limit(top_k * 10)  # over-fetch to allow ranking
-                    )
+                    # Check if query requests a specific page number
+                    page_match = re.search(r"\b(?:page|pg|p\.?)\s*#?\s*(\d+)\b", query.lower())
+                    page_filter = int(page_match.group(1)) if page_match else None
+
+                    if page_filter is not None:
+                        # Targeted query to fetch exact chunks on the requested page number
+                        stmt = (
+                            select(DocumentChunk, Document)
+                            .join(Document, Document.id == DocumentChunk.document_id)
+                            .where(Document.workspace_id == ws_uuid)
+                            .where(DocumentChunk.page_number == page_filter)
+                            .order_by(DocumentChunk.chunk_index.asc())
+                            .limit(top_k)
+                        )
+                    else:
+                        # Fetch more rows than top_k so we can score and rank
+                        stmt = (
+                            select(DocumentChunk, Document)
+                            .join(Document, Document.id == DocumentChunk.document_id)
+                            .where(Document.workspace_id == ws_uuid)
+                            .order_by(DocumentChunk.chunk_index.asc())
+                            .limit(top_k * 10)  # over-fetch to allow ranking
+                        )
                     db_res = await session.execute(stmt)
                     rows = db_res.all()
+
+                    if page_filter is not None:
+                        fallback_results = []
+                        for chunk, doc in rows:
+                            fallback_results.append({
+                                "id": str(chunk.id),
+                                "score": 1.0,
+                                "payload": {
+                                    "workspace_id": str(workspace_id),
+                                    "document_id": str(doc.id),
+                                    "chunk_id": str(chunk.id),
+                                    "source_filename": doc.filename,
+                                    "chunk_text": chunk.content,
+                                    "page_number": chunk.page_number,
+                                }
+                            })
+                        if fallback_results:
+                            return fallback_results
 
                     # Score each chunk by keyword overlap with the query
                     query_words = set(re.findall(r"\w+", query.lower()))
