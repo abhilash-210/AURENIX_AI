@@ -64,6 +64,10 @@ def _build_answer(question: str, context: str) -> str:
     3. Format a clean, structured answer citing [1].
     4. Never return raw garbage — always wrap in a natural sentence.
     """
+    from app.services.rag.processor import QueryProcessor
+    if QueryProcessor().is_conversational_greeting(question):
+        return "Hello! How can I assist you with your workspace documents today?"
+
     if not context.strip():
         return "I couldn't find any relevant information in the uploaded documents to answer your question."
 
