@@ -48,12 +48,14 @@ async def upload_document(
     # 1. Enforce access
     member = await get_workspace_member(workspace_id, current_user.id, db)
     
-    # 2. Check limits
+    # 2. Check limits — fetch workspace directly to avoid lazy-load issue
     from sqlalchemy import select, func
     from app.models.document import Document
+    from app.models.workspace import Workspace
+    workspace = await db.get(Workspace, workspace_id)
+    max_docs = (workspace.settings or {}).get("max_documents", 100) if workspace else 100
     doc_count = await db.scalar(select(func.count(Document.id)).where(Document.workspace_id == workspace_id))
-    max_docs = member.workspace.settings.get("max_documents", 100) # default limit 100
-    if doc_count and doc_count >= max_docs:
+    if doc_count is not None and doc_count >= max_docs:
         raise PaymentRequiredError(f"Workspace has reached its maximum document limit ({max_docs}).")
 
     content = await file.read()
@@ -119,10 +121,12 @@ async def upload_document(
 async def list_workspace_documents(
     workspace_id: uuid.UUID,
     request: Request,
-    current_user: User = Depends(get_current_user),  # noqa: ARG001
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> DocumentListResponse:
     request_id: str = getattr(request.state, "request_id", "unknown")
+    # Enforce membership — returns 404 if user is not a member
+    await get_workspace_member(workspace_id, current_user.id, db)
     service = DocumentIngestionService(db)
     documents = await service.list_workspace_documents(workspace_id)
 
