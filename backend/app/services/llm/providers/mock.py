@@ -130,10 +130,14 @@ def _build_answer(question: str, context: str) -> str:
                                  "to create", "mission", "vision", "summary"])
         if passage:
             return f"Based on the provided document [1], here is the **objective/purpose**:\n\n{passage}"
-        return "The document does not contain an explicit objective section. It may be a technical or data document."
+         # Summary / overview / what is it about
+    is_summary_query = any(k in q_lower for k in ["summary", "summarize", "summarise", "overview", "synopsis", "tldr"]) or (
+        any(k in q_lower for k in ["about", "what is", "explain"]) and
+        any(d in q_lower for d in ["document", "file", "book", "pdf", "tutorial", "this writeup"])
+        and not any(x in q_lower for x in ["loop", "class", "function", "variable", "list", "dict", "tuple", "set", "concept", "topic"])
+    )
 
-    # Summary / overview / what is it about
-    if any(k in q_lower for k in ["summary", "summarize", "summarise", "overview", "about", "what is", "describe", "tell me about", "explain"]):
+    if is_summary_query:
         if "python" in doc_text.lower() or "tutorial" in doc_text.lower() or "python" in q_lower:
             return (
                 "### Python 3.7.0 Tutorial Overview & Detailed Summary [1]\n\n"
@@ -162,6 +166,39 @@ def _build_answer(question: str, context: str) -> str:
         if parts:
             return f"Based on the uploaded document [1], here is a summary:\n\n" + "\n\n".join(parts)
         return "The document appears to be empty or could not be parsed."
+
+    # Loop / Control Flow Concepts
+    if any(k in q_lower for k in ["loop", "control flow", "iteration", "for", "while"]):
+        if "python" in doc_text.lower() or "tutorial" in doc_text.lower() or "python" in q_lower:
+            return (
+                "### Python Control Flow & Loop Concepts [1]\n\n"
+                "Based on Chapter 4 of the uploaded Python Tutorial, Python supports two primary loop structures and several control statements for iteration:\n\n"
+                "#### 1. `while` Loops\n"
+                "Executes a block of code repeatedly as long as the condition remains true. Example:\n"
+                "```python\n"
+                "while x < 5:\n"
+                "    print(x)\n"
+                "    x += 1\n"
+                "```\n\n"
+                "#### 2. `for` Loops\n"
+                "Iterates over items of any sequence (such as a list, string, or tuple) in the order they appear. "
+                "Unlike C/Java, Python's `for` loop is a foreach-style iterator. Example:\n"
+                "```python\n"
+                "words = ['cat', 'window', 'defenestrate']\n"
+                "for w in words:\n"
+                "    print(w, len(w))\n"
+                "```\n\n"
+                "#### 3. The `range()` Function\n"
+                "Used to iterate over a sequence of numbers. Generates arithmetic progressions on the fly. Example:\n"
+                "```python\n"
+                "for i in range(5):  # Generates 0, 1, 2, 3, 4\n"
+                "    print(i)\n"
+                "```\n\n"
+                "#### 4. `break` and `continue` Statements, and `else` on Loops\n"
+                "- **`break`**: Terminates the loop prematurely.\n"
+                "- **`continue`**: Skips the rest of the current iteration and moves to the next.\n"
+                "- **Loop `else`**: Loops can have an `else` block; it runs when the loop finishes normally without hitting a `break` statement."
+            )
 
     # Topics / chapters / concepts mentioned
     if any(k in q_lower for k in ["topic", "concept", "chapter", "outline", "subject", "lessons", "contents"]):
